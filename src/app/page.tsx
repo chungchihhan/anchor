@@ -9,7 +9,7 @@ import { ModelSelector } from '@/components/ModelSelector';
 import { ChatHistoryModal } from '@/components/ChatHistoryModal';
 import { useChat } from '@/hooks/useChat';
 import { useShortcuts, Shortcut } from '@/hooks/useShortcuts';
-import { Info, Download, FolderOpen, Command } from 'lucide-react';
+import { Info, Download, FolderOpen } from 'lucide-react';
 import { HistoryService } from '@/services/HistoryService';
 import { StorageService } from '@/services/StorageService';
 import { DEFAULT_SETTINGS } from '@/types';
@@ -68,13 +68,24 @@ export default function Home() {
   /* Load saved shortcuts */
   const savedSettings = useMemo(() => StorageService.getSettings(), [isSettingsOpen]); // Re-read when settings close
   const currentShortcuts = savedSettings.shortcuts || DEFAULT_SETTINGS.shortcuts;
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const shortcuts: Shortcut[] = useMemo(() => [
     {
-      key: currentShortcuts.help || 'Option+/',
+      key: currentShortcuts.help || 'Control+/',
       description: 'Toggle Help',
-      action: () => {}, // Handled internally
+      action: () => setIsHelpOpen(prev => !prev),
       group: 'General'
+    },
+    {
+        key: 'Escape',
+        description: 'Close Modal',
+        action: () => {
+            if (isHelpOpen) setIsHelpOpen(false);
+            if (isSettingsOpen) setIsSettingsOpen(false);
+            if (isModelSelectorOpen) setIsModelSelectorOpen(false);
+        },
+        group: 'General'
     },
     {
       key: currentShortcuts.toggleModel,
@@ -101,30 +112,40 @@ export default function Home() {
       group: 'Data'
     },
     {
-        key: currentShortcuts.settings || 'Option+,',
+        key: currentShortcuts.settings || 'Control+,',
         description: 'Settings',
         action: () => setIsSettingsOpen(true),
         group: 'General'
     }
-  ], [clearChat, downloadChat, loadFiles, currentShortcuts, setIsModelSelectorOpen]);
+  ], [clearChat, downloadChat, loadFiles, currentShortcuts, isHelpOpen, isSettingsOpen, isModelSelectorOpen]);
 
-  const { isHelpOpen, closeHelp } = useShortcuts(shortcuts);
+  useShortcuts(shortcuts);
 
   return (
     <main className="flex h-screen w-full overflow-hidden flex-col relative">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 z-10 transition-all duration-300">
-            <div className="flex items-center gap-4">
-                 <div className="w-3 h-3 rounded-full bg-red-500/80 shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
-                 <div className="flex items-center gap-2">
-                    <span className="text-white font-medium text-sm tracking-wide drop-shadow-md">ANCHOR</span>
-                    <span className="text-white/20 text-xs">/</span>
-                    <button 
-                        onClick={() => setIsModelSelectorOpen(true)}
-                        className="text-cyan-400 text-xs font-mono uppercase tracking-wider bg-cyan-900/10 px-2 py-0.5 rounded border border-cyan-500/10 backdrop-blur-sm hover:bg-cyan-500/20 transition-colors"
-                    >
-                        {selectedModel}
-                    </button>
+                <div className="flex items-center gap-3">
+                    <div className="relative group cursor-default">
+                        <div className="absolute -inset-2 bg-cyan-500/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400 relative transform group-hover:scale-110 transition-transform duration-500">
+                             <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" className="opacity-0 group-hover:opacity-20 transition-opacity duration-500" />
+                             <path d="M12 6V18" />
+                             <path d="M5 12H4.5C4.5 16.1421 7.85786 19.5 12 19.5C16.1421 19.5 19.5 16.1421 19.5 12H19" />
+                             <circle cx="12" cy="6" r="2" fill="currentColor" className="text-cyan-200" />
+                             <path d="M12 18L10 16" />
+                             <path d="M12 18L14 16" />
+                        </svg>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-white font-medium text-sm tracking-wide drop-shadow-md">ANCHOR</span>
+                        <span className="text-white/20 text-xs">/</span>
+                        <button 
+                            onClick={() => setIsModelSelectorOpen(true)}
+                            className="text-cyan-400 text-xs font-mono uppercase tracking-wider bg-cyan-900/10 px-2 py-0.5 rounded border border-cyan-500/10 backdrop-blur-sm hover:bg-cyan-500/20 transition-colors"
+                        >
+                            {selectedModel}
+                        </button>
                  </div>
             </div>
             <div className="flex items-center gap-3">
@@ -146,7 +167,7 @@ export default function Home() {
                  </button>
                  <div className="w-px h-4 bg-white/10 mx-1" />
                  <div className="flex items-center gap-2 text-xs text-white/30 px-2 py-1 rounded-md border border-white/5 cursor-help hover:bg-white/5 transition-colors" title="View Shortcuts">
-                    <Command size={10} />
+                    <span className="font-mono text-[10px] leading-none">^</span>
                     <span>/</span>
                  </div>
             </div>
@@ -156,14 +177,21 @@ export default function Home() {
         <div className="flex-1 flex flex-col relative z-0 overflow-hidden">
              {messages.length === 0 ? (
                  <div className="flex-1 flex flex-col items-center justify-center p-4">
-                     <div className="w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                         <div className="text-center mb-8">
-                             <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 mb-2 drop-shadow-sm">
+                     <div className="w-full max-w-2xl">
+                         <div className="text-center mb-10 relative">
+                             {/* Ambient Background Glow */}
+                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
+                             
+                             <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/40 mb-3 drop-shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
                                  How can I help you?
                              </h1>
-                             <p className="text-white/40">Start a conversation with Anchor AI</p>
+                             <p className="text-white/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 relative">
+                                 Start a conversation with Anchor AI
+                             </p>
                          </div>
-                         <ChatInput onSend={sendMessage} disabled={isLoading} />
+                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+                            <ChatInput onSend={sendMessage} disabled={isLoading} hideSendButton={true} />
+                         </div>
                      </div>
                  </div>
              ) : (
@@ -186,8 +214,8 @@ export default function Home() {
                         
                         {/* Input Area with Enhanced Glass/Transparency */}
                         <div className="p-4 pt-2 relative z-10">
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent -z-10 pointer-events-none" />
-                           <ChatInput onSend={sendMessage} disabled={isLoading} />
+                            <div className="absolute inset-0 transparent -z-10 pointer-events-none" />
+                           <ChatInput onSend={sendMessage} disabled={isLoading} hideSendButton={true} />
                         </div>
                     </div>
                  </>
@@ -202,7 +230,7 @@ export default function Home() {
           )}
 
         {/* Shortcuts Help Overlay */}
-        <ShortcutsHelp isOpen={isHelpOpen} onClose={closeHelp} shortcuts={shortcuts} />
+        <ShortcutsHelp isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} shortcuts={shortcuts} />
         
         {/* Load Modal */}
         <ChatHistoryModal

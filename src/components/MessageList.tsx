@@ -87,7 +87,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
 
                     <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[85%]`}>
                         <div
-                            className={`rounded-2xl px-5 py-4 transition-all w-full 
+                            className={`rounded-2xl px-4 py-3 transition-all 
                                 ${displayMode === 'chat' 
                                     ? 'shadow-sm backdrop-blur-md border ' 
                                     : 'px-0 py-2 ' // Compact: less padding, no border/bg usually
@@ -133,7 +133,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                         <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                     </div>
                                 ) : (
-                                    <div className="prose prose-invert prose-sm max-w-none">
+                                    <div className={`prose prose-invert prose-sm max-w-none ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
                                         <ReactMarkdown
                                             remarkPlugins={[remarkGfm]}
                                             components={{
@@ -149,7 +149,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                     };
 
                                                     return !inline && match ? (
-                                                        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-[#1e1e1e]">
+                                                        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-[#1e1e1e] text-left">
                                                             <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-white/5 text-xs text-gray-400">
                                                                 <span>{match[1]}</span>
                                                                 <button onClick={handleCopy} className="hover:text-white transition-colors">
@@ -185,7 +185,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                         </div>
                         
                         {/* Meta and Actions */}
-                        <div className={`flex items-center gap-2 mt-1.5 ${msg.role === 'user' ? 'flex-row-reverse' : 'pl-5'} ${editingIndex === index ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                        <div className={`flex items-center gap-2 mt-1.5 ${msg.role === 'user' ? 'justify-end' : ''} ${editingIndex === index ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
                             {msg.timestamp && (
                                 <span className="text-[10px] text-white/30 font-mono">
                                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

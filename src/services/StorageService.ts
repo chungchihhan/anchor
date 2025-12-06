@@ -14,7 +14,24 @@ export class StorageService {
         }
 
         try {
-            return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
+            const parsed = JSON.parse(stored);
+            
+            // Migration: Fix legacy Help shortcut (Meta+/ -> Control+/) and Option -> Control
+            if (parsed.shortcuts) {
+                // Specific fix for old meta setting if it exists
+                if (parsed.shortcuts.help === 'Meta+/') {
+                    parsed.shortcuts.help = 'Control+/';
+                }
+
+                // General migration: Option -> Control
+                Object.keys(parsed.shortcuts).forEach(key => {
+                    if (parsed.shortcuts[key].includes('Option+')) {
+                        parsed.shortcuts[key] = parsed.shortcuts[key].replace('Option+', 'Control+');
+                    }
+                });
+            }
+            
+            return { ...DEFAULT_SETTINGS, ...parsed };
         } catch (e) {
             console.error('Failed to parse settings', e);
             return DEFAULT_SETTINGS;

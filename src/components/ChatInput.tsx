@@ -4,9 +4,10 @@ import { Send } from 'lucide-react';
 interface ChatInputProps {
     onSend: (content: string) => void;
     disabled: boolean;
+    hideSendButton?: boolean;
 }
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInputProps) {
     const [input, setInput] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -36,7 +37,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
 
     return (
         <div className="p-0 bg-transparent">
-            <div className="relative max-w-4xl mx-auto flex items-end gap-2">
+            <div className={`relative max-w-4xl mx-auto flex items-end gap-2 ${hideSendButton ? 'justify-center' : ''}`}>
                 <textarea
                     ref={textareaRef}
                     value={input}
@@ -47,13 +48,15 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                     rows={1}
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:border-white/20 focus:bg-white/10 resize-none max-h-[200px] overflow-y-auto transition-all backdrop-blur-md shadow-lg"
                 />
-                <button
-                    onClick={handleSend}
-                    disabled={!input.trim() || disabled}
-                    className="p-4 rounded-xl bg-white/5 text-white/70 hover:text-white hover:bg-white/10 border border-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all mb-[1px] backdrop-blur-sm"
-                >
-                    <Send size={20} />
-                </button>
+                {!hideSendButton && (
+                    <button
+                        onClick={handleSend}
+                        disabled={!input.trim() || disabled}
+                        className="p-4 rounded-xl bg-white/5 text-white/70 hover:text-white hover:bg-white/10 border border-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all mb-[1px] backdrop-blur-sm"
+                    >
+                        <Send size={20} />
+                    </button>
+                )}
             </div>
             <div className="text-center mt-3 opacity-0 hover:opacity-100 transition-opacity duration-300">
                 <span className="text-[10px] text-white/20 uppercase tracking-widest font-mono">

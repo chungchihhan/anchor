@@ -133,7 +133,29 @@
       "content": "\n\n我是 Anthropic 開發的一個基於 transformers 的大型语言模型，能夠理解和生成人類語言，具有廣泛的知識和能力，包括但不限於：\n\n* 回答問題\n* 解釋概念\n* 協助寫作\n* 程式設計\n* 翻譯\n* 等等\n\n我的模型架構基於 transformers，訓練了大量的文本數據，能夠捕捉到語言的複雜性和 nuance，提供更加 accurate 和有幫助的回應。",
       "timestamp": 1765015415503,
       "model": "llama3-70b"
+    },
+    {
+      "role": "user",
+      "content": "hi",
+      "timestamp": 1765018695903
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! How can I assist you today?",
+      "timestamp": 1765018695905,
+      "model": "gpt-3.5-turbo"
+    },
+    {
+      "role": "user",
+      "content": "你好",
+      "timestamp": 1765022611892
+    },
+    {
+      "role": "assistant",
+      "content": "你好！有什麼我可以幫忙的嗎？",
+      "timestamp": 1765022611894,
+      "model": "gpt-3.5-turbo"
     }
   ],
-  "timestamp": 1765015422533
+  "timestamp": 1765023913483
 }

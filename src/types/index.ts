@@ -52,11 +52,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   modelName: 'gpt-3.5-turbo',
   displayMode: 'chat',
   shortcuts: {
-    'newChat': 'Option+N',
-    'toggleModel': 'Option+M',
-    'saveChat': 'Option+S', // This will map to Export/Download in UI now
-    'openChat': 'Option+O',
-    'settings': 'Option+,',
-    'help': 'Option+/'
+    'newChat': 'Control+N',
+    'toggleModel': 'Control+M',
+    'saveChat': 'Control+S', // This will map to Export/Download in UI now
+    'openChat': 'Control+O',
+    'settings': 'Control+,',
+    'help': 'Control+/'
   }
 };

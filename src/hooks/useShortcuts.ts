@@ -8,68 +8,56 @@ export interface Shortcut {
 }
 
 export function useShortcuts(shortcuts: Shortcut[]) {
-    const [isOpen, setIsOpen] = useState(false);
-
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            console.log('Key pressed:', e.key, 'Code:', e.code, 'Ctrl:', e.ctrlKey, 'Meta:', e.metaKey, 'Alt:', e.altKey);
             // Process shortcuts
-            let matchFound = false;
-
             shortcuts.forEach(shortcut => {
                 const keys = shortcut.key.toLowerCase().split('+').map(k => k.trim());
                 const mainKey = keys[keys.length - 1];
-                const needsMeta = keys.includes('cmd') || keys.includes('ctrl');
+                const needsMeta = keys.includes('cmd') || keys.includes('meta');
+                const needsCtrl = keys.includes('ctrl') || keys.includes('control');
                 const needsShift = keys.includes('shift');
                 const needsAlt = keys.includes('alt') || keys.includes('option');
 
                 let keyMatches = false;
 
-                // Use e.code for Option key shortcuts because e.key changes (e.g. Option+N -> ˜)
-                if (needsAlt) {
-                     if (/^[a-z]$/.test(mainKey)) {
-                         keyMatches = e.code === `Key${mainKey.toUpperCase()}`;
-                     } else if (mainKey === ',') {
-                         keyMatches = e.code === 'Comma';
-                     } else if (mainKey === '/') {
-                         keyMatches = e.code === 'Slash';
-                     } else if (mainKey === '.') {
-                         keyMatches = e.code === 'Period';
-                     } else {
-                         // Fallback for others or if mainKey is somehow different
-                         keyMatches = e.key.toLowerCase() === mainKey;
-                     }
+                // Match using e.code for letters to avoid modifier checking issues
+                // key might be 'Control' or 'Meta' if only modifier is pressed, so we check mainKey
+                if (/^[a-z]$/.test(mainKey)) {
+                     // Check both e.key (for safeguard) and e.code (for robustness)
+                     // e.code is usually 'KeyN' for 'n'
+                     keyMatches = e.code === `Key${mainKey.toUpperCase()}` || e.key.toLowerCase() === mainKey;
+                } else if (mainKey === ',') {
+                     keyMatches = e.code === 'Comma' || e.key === ',';
+                } else if (mainKey === '/') {
+                     keyMatches = e.code === 'Slash' || e.key === '/';
+                } else if (mainKey === '.') {
+                     keyMatches = e.code === 'Period' || e.key === '.';
                 } else {
-                    // Standard matching for non-Option shortcuts (e.g. generic commands)
-                    keyMatches = e.key.toLowerCase() === mainKey.toLowerCase();
+                     // Fallback
+                     keyMatches = e.key.toLowerCase() === mainKey.toLowerCase();
+                     
+                     // Special case for 'Escape'
+                     if (mainKey === 'escape' && e.key === 'Escape') {
+                         keyMatches = true;
+                     }
                 }
 
                 if (
                     keyMatches &&
-                    (needsMeta === (e.metaKey || e.ctrlKey)) &&
+                    (needsMeta === e.metaKey) &&
+                    (needsCtrl === e.ctrlKey) &&
                     (needsShift === e.shiftKey) &&
                     (needsAlt === e.altKey)
                 ) {
                     e.preventDefault();
                     shortcut.action();
-                    matchFound = true;
                 }
             });
-
-            // Toggle help overlay (Fixed or Customizable? keeping fixed as fail-safe for now, or use the 'help' action from shortcuts if passed)
-             if (!matchFound && (e.metaKey || e.ctrlKey) && e.key === '/') {
-                e.preventDefault();
-                setIsOpen(prev => !prev);
-            }
-
-            if (e.key === 'Escape' && isOpen) {
-                e.preventDefault();
-                setIsOpen(false);
-            }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [shortcuts, isOpen]);
-
-    return { isHelpOpen: isOpen, closeHelp: () => setIsOpen(false) };
+    }, [shortcuts]);
 }

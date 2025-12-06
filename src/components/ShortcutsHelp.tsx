@@ -43,7 +43,7 @@ export function ShortcutsHelp({ isOpen, onClose, shortcuts }: ShortcutsHelpProps
                                         <div className="flex gap-1">
                                             {shortcut.key.split('+').map((k, i) => (
                                                 <kbd key={i} className="px-2 py-1 min-w-[1.5rem] text-center bg-white/10 rounded text-xs font-mono text-cyan-300 border border-white/10">
-                                                    {k === 'cmd' ? '⌘' : k.toUpperCase()}
+                                                    {k.toLowerCase() === 'control' || k.toLowerCase() === 'ctrl' ? '^' : k === 'Option' ? '⌥' : k.toUpperCase()}
                                                 </kbd>
                                             ))}
                                         </div>
