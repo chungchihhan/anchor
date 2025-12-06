@@ -1,6 +1,15 @@
 export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  timestamp?: number;
+  model?: string;
+}
+
+export interface ChatSession {
+    id: string;
+    title: string;
+    messages: Message[];
+    timestamp: number; // For sorting
 }
 
 export interface ChatCompletionRequest {
@@ -25,14 +34,29 @@ export interface ChatCompletionResponse {
   };
 }
 
+export interface ShortcutMap {
+  [actionId: string]: string; 
+}
+
 export interface AppSettings {
   apiKey: string;
   endpointUrl: string;
   modelName: string;
+  shortcuts: ShortcutMap;
+  displayMode: 'chat' | 'compact';
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   apiKey: '',
   endpointUrl: 'https://portal.rdsec.trendmicro.com/aiendpoint/v1/chat/completions',
-  modelName: 'gpt-3.5-turbo', // Default or placeholder
+  modelName: 'gpt-3.5-turbo',
+  displayMode: 'chat',
+  shortcuts: {
+    'newChat': 'Option+N',
+    'toggleModel': 'Option+M',
+    'saveChat': 'Option+S', // This will map to Export/Download in UI now
+    'openChat': 'Option+O',
+    'settings': 'Option+,',
+    'help': 'Option+/'
+  }
 };

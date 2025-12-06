@@ -1,67 +1,237 @@
+import { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Message } from '@/types';
-import { Bot, User } from 'lucide-react';
+import { Bot, User, Copy, Check, RotateCcw, Pencil, X } from 'lucide-react';
 
 interface MessageListProps {
     messages: Message[];
     isLoading: boolean;
+    onRetry?: (index: number) => void;
+    onEdit?: (index: number, newContent: string) => void;
+    displayMode?: 'chat' | 'compact';
 }
 
-export function MessageList({ messages, isLoading }: MessageListProps) {
-    return (
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {messages.length === 0 && (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-50">
-                    <Bot size={48} className="mb-4" />
-                    <p className="text-lg font-medium">Start a conversation</p>
-                </div>
-            )}
+export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode = 'chat' }: MessageListProps) {
+    const bottomRef = useRef<HTMLDivElement>(null);
+    const [msgsCopied, setMsgsCopied] = useState<number | null>(null);
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const [editContent, setEditContent] = useState('');
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+    // Auto-scroll to bottom
+    useEffect(() => {
+        if (bottomRef.current && editingIndex === null) {
+            bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages, isLoading, editingIndex]);
+
+    // Auto-resize textarea
+    useEffect(() => {
+        if (editingIndex !== null && textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+        }
+    }, [editContent, editingIndex]);
+
+    const handleCopyMessage = (content: string, index: number) => {
+        navigator.clipboard.writeText(content);
+        setMsgsCopied(index);
+        setTimeout(() => setMsgsCopied(null), 2000);
+    };
+
+    const startEditing = (index: number, content: string) => {
+        setEditingIndex(index);
+        setEditContent(content);
+    };
+
+    const cancelEditing = () => {
+        setEditingIndex(null);
+        setEditContent('');
+    };
+
+    const saveEdit = (index: number) => {
+        if (editContent.trim() !== '' && onEdit) {
+            onEdit(index, editContent);
+            setEditingIndex(null);
+            setEditContent('');
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            saveEdit(index);
+        } else if (e.key === 'Escape') {
+            cancelEditing();
+        }
+    };
+
+    return (
+        <div className="flex-1 overflow-y-auto p-4 space-y-8 custom-scrollbar">
             {messages.map((msg, index) => (
                 <div
                     key={index}
-                    className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group`}
                 >
-                    {msg.role === 'assistant' && (
-                        <div className="w-8 h-8 rounded-full bg-accent-gradient flex items-center justify-center flex-shrink-0">
+                    {/* Assistant Avatar - Hide in Compact Mode */}
+                    {displayMode === 'chat' && msg.role === 'assistant' && (
+                    <div className="flex flex-col items-center gap-1">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center flex-shrink-0 mt-1 shadow-lg shadow-cyan-500/20">
                             <Bot size={16} className="text-white" />
                         </div>
+                    </div>
                     )}
 
-                    <div
-                        className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.role === 'user'
-                                ? 'bg-accent-gradient text-white rounded-br-none'
-                                : 'glass text-gray-100 rounded-bl-none'
-                            }`}
-                    >
-                        <div className="prose prose-invert prose-sm max-w-none">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {msg.content}
-                            </ReactMarkdown>
+                    <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[85%]`}>
+                        <div
+                            className={`rounded-2xl px-5 py-4 transition-all w-full 
+                                ${displayMode === 'chat' 
+                                    ? 'shadow-sm backdrop-blur-md border ' 
+                                    : 'px-0 py-2 ' // Compact: less padding, no border/bg usually
+                                }
+                                ${msg.role === 'user'
+                                    ? (displayMode === 'chat' ? 'bg-white/10 border-white/10 text-white rounded-br-sm' : 'text-cyan-100')
+                                    : (displayMode === 'chat' ? 'bg-white/5 border-white/5 text-gray-100 rounded-bl-sm' : 'text-gray-300')
+                                } 
+                                ${editingIndex === index ? 'ring-1 ring-cyan-500/50 bg-black/40' : ''}`}
+                        >
+                            {editingIndex === index ? (
+                                <div className="flex flex-col gap-3 w-full min-w-[300px]">
+                                    <textarea
+                                        ref={textareaRef}
+                                        value={editContent}
+                                        onChange={(e) => setEditContent(e.target.value)}
+                                        onKeyDown={(e) => handleKeyDown(e, index)}
+                                        className="w-full bg-transparent border-none outline-none resize-none text-white placeholder-white/20 p-0 text-base leading-relaxed"
+                                        rows={1}
+                                        autoFocus
+                                    />
+                                    <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+                                        <button 
+                                            onClick={cancelEditing}
+                                            className="px-3 py-1.5 rounded-md text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button 
+                                            onClick={() => saveEdit(index)}
+                                            className="px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-600 hover:bg-cyan-500 text-white transition-colors shadow-lg shadow-cyan-500/20"
+                                        >
+                                            Save & Generate
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                {msg.role === 'assistant' && msg.content === '' && isLoading && index === messages.length - 1 ? (
+                                    <div className="flex items-center gap-2 h-6">
+                                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                    </div>
+                                ) : (
+                                    <div className="prose prose-invert prose-sm max-w-none">
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            components={{
+                                                code({ node, inline, className, children, ...props }: any) {
+                                                    const match = /language-(\w+)/.exec(className || '');
+                                                    const [copied, setCopied] = useState(false);
+                                                    const codeContent = String(children).replace(/\n$/, '');
+
+                                                    const handleCopy = () => {
+                                                        navigator.clipboard.writeText(codeContent);
+                                                        setCopied(true);
+                                                        setTimeout(() => setCopied(false), 2000);
+                                                    };
+
+                                                    return !inline && match ? (
+                                                        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-[#1e1e1e]">
+                                                            <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-white/5 text-xs text-gray-400">
+                                                                <span>{match[1]}</span>
+                                                                <button onClick={handleCopy} className="hover:text-white transition-colors">
+                                                                    {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                                                                </button>
+                                                            </div>
+                                                            <div className="overflow-x-auto">
+                                                                <SyntaxHighlighter
+                                                                    {...props}
+                                                                    style={oneDark}
+                                                                    language={match[1]}
+                                                                    PreTag="div"
+                                                                    customStyle={{ margin: 0, padding: '1rem', background: 'transparent' }}
+                                                                >
+                                                                    {codeContent}
+                                                                </SyntaxHighlighter>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <code {...props} className={`${className} bg-white/10 rounded px-1.5 py-0.5 text-red-200`}>
+                                                            {children}
+                                                        </code>
+                                                    );
+                                                }
+                                            }}
+                                        >
+                                            {msg.content}
+                                        </ReactMarkdown>
+                                    </div>
+                                )}
+                                </>
+                            )}
+                        </div>
+                        
+                        {/* Meta and Actions */}
+                        <div className={`flex items-center gap-2 mt-1.5 ${msg.role === 'user' ? 'flex-row-reverse' : 'pl-5'} ${editingIndex === index ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                            {msg.timestamp && (
+                                <span className="text-[10px] text-white/30 font-mono">
+                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            )}
+                            
+                            {msg.role === 'assistant' && msg.content !== '' && (
+                                <>
+                                    <button 
+                                        onClick={() => handleCopyMessage(msg.content, index)}
+                                        className="text-white/30 hover:text-white transition-colors p-1"
+                                        title="Copy Message"
+                                    >
+                                        {msgsCopied === index ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                                    </button>
+                                    <button 
+                                        onClick={() => onRetry?.(index)}
+                                        className="text-white/30 hover:text-white transition-colors p-1"
+                                        title="Regenerate Response"
+                                    >
+                                        <RotateCcw size={12} />
+                                    </button>
+                                </>
+                            )}
+                            
+                            {msg.role === 'user' && !isLoading && (
+                                <button
+                                    onClick={() => startEditing(index, msg.content)}
+                                    className="text-white/30 hover:text-white transition-colors p-1"
+                                    title="Edit Message"
+                                >
+                                    <Pencil size={12} />
+                                </button>
+                            )}
                         </div>
                     </div>
 
-                    {msg.role === 'user' && (
-                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                    {displayMode === 'chat' && msg.role === 'user' && (
+                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 mt-1">
                             <User size={16} className="text-white" />
                         </div>
                     )}
                 </div>
             ))}
-
-            {isLoading && (
-                <div className="flex gap-4 justify-start">
-                    <div className="w-8 h-8 rounded-full bg-accent-gradient flex items-center justify-center flex-shrink-0">
-                        <Bot size={16} className="text-white" />
-                    </div>
-                    <div className="glass px-4 py-3 rounded-2xl rounded-bl-none flex items-center gap-2">
-                        <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                </div>
-            )}
+            
+            <div ref={bottomRef} />
         </div>
     );
 }
