@@ -1,66 +1,55 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+
+import { useState } from 'react';
+import { Sidebar } from '@/components/Sidebar';
+import { ChatInput } from '@/components/ChatInput';
+import { MessageList } from '@/components/MessageList';
+import { SettingsModal } from '@/components/SettingsModal';
+import { useChat } from '@/hooks/useChat';
 
 export default function Home() {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const { messages, isLoading, error, sendMessage, clearChat } = useChat();
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="flex h-screen w-full overflow-hidden">
+      {/* Sidebar */}
+      <div className="hidden md:block h-full">
+        <Sidebar
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onNewChat={clearChat}
         />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col h-full relative">
+        {/* Header / Top Bar (Optional, maybe just for mobile menu) */}
+        <div className="md:hidden p-4 border-b border-white/10 flex justify-between items-center glass-panel">
+          <h1 className="font-bold text-lg">Anchor</h1>
+          <button onClick={() => setIsSettingsOpen(true)} className="text-sm text-accent">Settings</button>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Messages Area */}
+        <div className="flex-1 overflow-hidden relative">
+          <MessageList messages={messages} isLoading={isLoading} />
+
+          {/* Error Toast */}
+          {error && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-red-500/90 text-white px-4 py-2 rounded-lg shadow-lg backdrop-blur-sm text-sm animate-in fade-in slide-in-from-top-2">
+              {error}
+            </div>
+          )}
         </div>
-      </main>
-    </div>
+
+        {/* Input Area */}
+        <ChatInput onSend={sendMessage} disabled={isLoading} />
+      </div>
+
+      {/* Modals */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
+    </main>
   );
 }
