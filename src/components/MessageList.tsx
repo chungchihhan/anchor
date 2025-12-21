@@ -14,6 +14,24 @@ interface MessageListProps {
     displayMode?: 'chat' | 'compact';
 }
 
+const TableBlock = ({ node, className, children, ...props }: any) => {
+    return (
+        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm">
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
+                <span>Table</span>
+            </div>
+            <div className="overflow-x-auto p-2">
+                <table 
+                    className={`w-full text-left border-separate border-spacing-0 text-sm ${className || ''}`} 
+                    {...props}
+                >
+                    {children}
+                </table>
+            </div>
+        </div>
+    );
+};
+
 export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode = 'chat' }: MessageListProps) {
     const bottomRef = useRef<HTMLDivElement>(null);
     const [msgsCopied, setMsgsCopied] = useState<number | null>(null);
@@ -87,10 +105,10 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
 
                     <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[85%]`}>
                         <div
-                            className={`rounded-2xl px-4 py-3 transition-all 
+                            className={`rounded-2xl p-4 transition-all 
                                 ${displayMode === 'chat' 
                                     ? 'shadow-sm backdrop-blur-md border ' 
-                                    : 'px-0 py-2 ' // Compact: less padding, no border/bg usually
+                                    : 'px-0 py-4' // Compact: less padding, no border/bg usually
                                 }
                                 ${msg.role === 'user'
                                     ? (displayMode === 'chat' ? 'bg-white/10 border-white/10 text-white rounded-br-sm' : 'text-cyan-100')
@@ -133,12 +151,34 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                         <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                     </div>
                                 ) : (
-                                    <div className={`prose prose-invert prose-sm max-w-none ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                                    <div className={`leading-normal ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
                                         <ReactMarkdown
                                             remarkPlugins={[remarkGfm]}
                                             components={{
+                                                // Text Elements
+                                                p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                                                h1: ({node, ...props}) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
+                                                h2: ({node, ...props}) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
+                                                h3: ({node, ...props}) => <h3 className="text-lg font-semibold mb-2 mt-4" {...props} />,
+                                                ul: ({node, ...props}) => <ul className={`list-disc mb-4 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
+                                                ol: ({node, ...props}) => <ol className={`list-decimal mb-4 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
+                                                li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                                                blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-4 italic bg-white/5 rounded-r" {...props} />,
+                                                pre: ({children}) => <>{children}</>,
+
+                                                // Table Elements
+                                                table: TableBlock,
+                                                thead: ({node, ...props}) => <thead className="bg-white/5 text-xs uppercase font-medium text-white/60" {...props} />,
+                                                tbody: ({node, ...props}) => <tbody className="text-gray-300" {...props} />,
+                                                tr: ({node, ...props}) => <tr className="" {...props} />,
+                                                th: ({node, ...props}) => <th className="px-4 py-2 font-medium first:rounded-tl-md last:rounded-tr-md border-b border-white/5" {...props} />,
+                                                td: ({node, ...props}) => <td className="px-4 py-2 border border-white/5 first:rounded-bl-md last:rounded-br-md" {...props} />,
+                                                
+                                                // Code Blocks
                                                 code({ node, inline, className, children, ...props }: any) {
-                                                    const match = /language-(\w+)/.exec(className || '');
+                                                    const isMatch = /language-(\w+)/.exec(className || '');
+                                                    const hasNewLine = String(children).replace(/\n$/, '').includes('\n');
+                                                    const isBlock = isMatch || hasNewLine;
                                                     const [copied, setCopied] = useState(false);
                                                     const codeContent = String(children).replace(/\n$/, '');
 
@@ -148,10 +188,10 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                         setTimeout(() => setCopied(false), 2000);
                                                     };
 
-                                                    return !inline && match ? (
-                                                        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-[#1e1e1e] text-left">
-                                                            <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-white/5 text-xs text-gray-400">
-                                                                <span>{match[1]}</span>
+                                                    return isBlock ? (
+                                                        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm">
+                                                            <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
+                                                                <span>{isMatch ? isMatch[1] : 'code'}</span>
                                                                 <button onClick={handleCopy} className="hover:text-white transition-colors">
                                                                     {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
                                                                 </button>
@@ -160,9 +200,11 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                                 <SyntaxHighlighter
                                                                     {...props}
                                                                     style={oneDark}
-                                                                    language={match[1]}
+                                                                    language={isMatch ? isMatch[1] : 'text'}
                                                                     PreTag="div"
-                                                                    customStyle={{ margin: 0, padding: '1rem', background: 'transparent' }}
+                                                                    wrapLongLines={true}
+                                                                    codeTagProps={{ style: { backgroundColor: 'transparent' } }}
+                                                                    customStyle={{ margin: 0, padding: '1rem', background: 'transparent', lineHeight: '1.5' }}
                                                                 >
                                                                     {codeContent}
                                                                 </SyntaxHighlighter>
@@ -185,7 +227,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                         </div>
                         
                         {/* Meta and Actions */}
-                        <div className={`flex items-center gap-2 mt-1.5 ${msg.role === 'user' ? 'justify-end' : ''} ${editingIndex === index ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                        <div className={`flex items-center gap-2 mt-1.5 ${msg.role === 'user' ? 'justify-end' : ''} ${editingIndex === index ? 'opacity-0 pointer-events-none' : ''} transition-opacity`}>
                             {msg.timestamp && (
                                 <span className="text-[10px] text-white/30 font-mono">
                                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
