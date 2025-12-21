@@ -7,6 +7,8 @@ interface ChatInputProps {
     hideSendButton?: boolean;
 }
 
+import GlassSurface from './GlassSurface';
+
 export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInputProps) {
     const [input, setInput] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -38,16 +40,35 @@ export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInpu
     return (
         <div className="p-0 bg-transparent">
             <div className={`relative max-w-4xl mx-auto flex items-end gap-2 ${hideSendButton ? 'justify-center' : ''}`}>
-                <textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Type a message..."
-                    disabled={disabled}
-                    rows={1}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:border-white/20 focus:bg-white/10 resize-none max-h-[200px] overflow-y-auto transition-all backdrop-blur-md shadow-lg"
-                />
+                <div className="w-full">
+                    <GlassSurface
+                        borderRadius={32}
+                        borderWidth={0.5}
+                        backgroundOpacity={0.8}
+                        padding={16}
+                        blur={50}
+                        brightness={100}
+                        mixBlendMode="normal"
+                        width="100%"
+                        height="auto"
+                        className="min-h-[60px]"
+                    >
+                        <textarea
+                            ref={textareaRef}
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Type a message..."
+                            disabled={disabled}
+                            rows={1}
+                            className="w-full bg-transparent text-black border-none placeholder-black/50 focus:outline-none resize-none max-h-[200px] overflow-y-auto px-2 py-1"
+                            style={{ 
+                                height: 'auto',
+                                minHeight: '24px'
+                            }}
+                        />
+                    </GlassSurface>
+                </div>
                 {!hideSendButton && (
                     <button
                         onClick={handleSend}

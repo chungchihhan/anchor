@@ -199,9 +199,9 @@ export default function Home() {
                     {/* Constrained Width Container */}
                     {/* Constrained Width Container */}
                     <div className="flex-1 overflow-hidden flex flex-col w-full max-w-4xl mx-auto relative">
-                        {/* Gradient Mask for Smooth Scroll Fade */}
-                        <div className="flex-1 overflow-y-auto no-scrollbar" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 20px, black 85%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20px, black 85%, transparent 100%)' }}>
-                            <div className="min-h-full pb-4">
+                        {/* Scrollable Message Area */}
+                        <div className="absolute inset-0 overflow-y-auto no-scrollbar scroll-smooth" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 20px, black 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20px, black 100%)' }}>
+                            <div className="min-h-full pb-32">
                                 <MessageList 
                                     messages={messages} 
                                     isLoading={isLoading} 
@@ -213,9 +213,8 @@ export default function Home() {
                         </div>
                         
                         {/* Input Area with Enhanced Glass/Transparency */}
-                        <div className="p-4 pt-2 relative z-10">
-                            <div className="absolute inset-0 transparent -z-10 pointer-events-none" />
-                           <ChatInput onSend={sendMessage} disabled={isLoading} hideSendButton={true} />
+                        <div className="absolute bottom-0 left-0 right-0 p-4 pt-2 z-20">
+                            <ChatInput onSend={sendMessage} disabled={isLoading} hideSendButton={true} />
                         </div>
                     </div>
                  </>
