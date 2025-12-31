@@ -1,36 +1,42 @@
-import { Message, ChatSession } from '@/types';
-
-export interface HistoryFile {
-    name: string;
-    path: string;
-    createdAt: string;
-}
+import { ChatSession } from '@/types';
+import { invoke } from '@tauri-apps/api/core';
 
 export class HistoryService {
     static async saveToLocal(session: ChatSession): Promise<void> {
-        await fetch('/api/history', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(session),
-        });
+        if (typeof window === 'undefined') return;
+        try {
+            await invoke('save_chat', { session });
+        } catch (error) {
+            console.error('Failed to save chat:', error);
+            throw error;
+        }
     }
 
     static async listLocal(): Promise<ChatSession[]> {
-        const res = await fetch('/api/history');
-        if (!res.ok) throw new Error('Failed to list history');
-        return res.json();
+        if (typeof window === 'undefined') return [];
+        try {
+            return await invoke('list_chats');
+        } catch (error) {
+            console.error('Failed to list chats:', error);
+            return [];
+        }
     }
 
     static async loadLocal(id: string): Promise<ChatSession> {
-        const res = await fetch(`/api/history/${id}`);
-        if (!res.ok) throw new Error('Failed to load history');
-        return res.json();
+        try {
+            return await invoke('load_chat', { id });
+        } catch (error) {
+            console.error('Failed to load chat:', error);
+            throw error;
+        }
     }
 
     static async deleteLocal(id: string): Promise<void> {
-        const res = await fetch(`/api/history/${id}`, {
-            method: 'DELETE',
-        });
-        if (!res.ok) throw new Error('Failed to delete history');
+        try {
+            await invoke('delete_chat', { id });
+        } catch (error) {
+            console.error('Failed to delete chat:', error);
+            throw error;
+        }
     }
 }

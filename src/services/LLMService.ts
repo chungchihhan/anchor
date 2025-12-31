@@ -7,7 +7,7 @@ export class LLMService {
         const apiKey = process.env.NEXT_PUBLIC_API_KEY || settings.apiKey;
         let endpointUrl = process.env.NEXT_PUBLIC_API_BASE_URL || settings.endpointUrl;
 
-        if (!apiKey) throw new Error('API Key missing');
+        if (!apiKey) return [];
 
         // Construct models endpoint (remove /chat/completions if present, append /models)
         const baseUrl = endpointUrl.replace(/\/chat\/completions\/?$/, '').replace(/\/$/, '');
@@ -23,7 +23,7 @@ export class LLMService {
             });
 
             if (!response.ok) throw new Error(`Failed to fetch models: ${response.status}`);
-            
+
             const data = await response.json();
             // Expecting OpenAI format: { data: [{ id: 'model-id', ... }] }
             if (data.data && Array.isArray(data.data)) {
@@ -81,7 +81,7 @@ export class LLMService {
             for (const line of lines) {
                 if (line.trim() === '') continue;
                 if (line.includes('[DONE]')) return;
-                
+
                 if (line.startsWith('data: ')) {
                     try {
                         const data = JSON.parse(line.slice(6));
