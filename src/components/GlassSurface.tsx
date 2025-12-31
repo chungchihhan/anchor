@@ -19,31 +19,31 @@ export interface GlassSurfaceProps {
   xChannel?: 'R' | 'G' | 'B';
   yChannel?: 'R' | 'G' | 'B';
   mixBlendMode?:
-    | 'normal'
-    | 'multiply'
-    | 'screen'
-    | 'overlay'
-    | 'darken'
-    | 'lighten'
-    | 'color-dodge'
-    | 'color-burn'
-    | 'hard-light'
-    | 'soft-light'
-    | 'difference'
-    | 'exclusion'
-    | 'hue'
-    | 'saturation'
-    | 'color'
-    | 'luminosity'
-    | 'plus-darker'
-    | 'plus-lighter';
+  | 'normal'
+  | 'multiply'
+  | 'screen'
+  | 'overlay'
+  | 'darken'
+  | 'lighten'
+  | 'color-dodge'
+  | 'color-burn'
+  | 'hard-light'
+  | 'soft-light'
+  | 'difference'
+  | 'exclusion'
+  | 'hue'
+  | 'saturation'
+  | 'color'
+  | 'luminosity'
+  | 'plus-darker'
+  | 'plus-lighter';
   className?: string;
   style?: React.CSSProperties;
   padding?: number | string;
 }
 
 const useDarkMode = () => {
-    // ... same code
+  // ... same code
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -83,7 +83,7 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   style = {},
   padding = '0.5rem' // default p-2 is 0.5rem
 }) => {
-    // ... component body
+  // ... component body
   const uniqueId = useId().replace(/:/g, '-');
   const filterId = `glass-filter-${uniqueId}`;
   const redGradId = `red-grad-${uniqueId}`;
@@ -132,8 +132,8 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
 
     return `data:image/svg+xml,${encodeURIComponent(svgContent)}`;
   };
-    // ...
-    const updateDisplacementMap = () => {
+  // ...
+  const updateDisplacementMap = () => {
     feImageRef.current?.setAttribute('href', generateDisplacementMap());
   };
 
@@ -169,7 +169,7 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
     yChannel,
     mixBlendMode
   ]);
-  
+
   // ... effects
 
   useEffect(() => {
@@ -205,7 +205,7 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   }, [width, height]);
 
   const supportsSVGFilters = () => {
-      // ...
+    // ...
     if (typeof navigator === 'undefined') return false;
     const isWebkit = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
     const isFirefox = /Firefox/.test(navigator.userAgent);
@@ -218,14 +218,14 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
     div.style.backdropFilter = `url(#${filterId})`;
     return div.style.backdropFilter !== '';
   };
-    // ...
+  // ...
   const supportsBackdropFilter = () => {
     if (typeof window === 'undefined') return false;
     return CSS.supports('backdrop-filter', 'blur(10px)');
   };
 
   const getContainerStyles = (): React.CSSProperties => {
-      // ...
+    // ...
     const baseStyles: React.CSSProperties = {
       ...style,
       width: typeof width === 'number' ? `${width}px` : width,
@@ -309,7 +309,7 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   };
 
   const glassSurfaceClasses =
-    'relative flex items-center justify-center overflow-hidden transition-opacity duration-[260ms] ease-out';
+    'relative flex items-center justify-center overflow-hidden transition-opacity duration-260 ease-out';
 
   const focusVisibleClasses = isDarkMode
     ? 'focus-visible:outline-2 focus-visible:outline-[#0A84FF] focus-visible:outline-offset-2'
@@ -321,7 +321,7 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
       className={`${glassSurfaceClasses} ${focusVisibleClasses} ${className}`}
       style={getContainerStyles()}
     >
-        {/* ... svg ... */}
+      {/* ... svg ... */}
       <svg
         className="w-full h-full pointer-events-none absolute inset-0 opacity-0 -z-10"
         xmlns="http://www.w3.org/2000/svg"
@@ -376,7 +376,7 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
         </defs>
       </svg>
 
-      <div 
+      <div
         className="w-full h-full flex items-center justify-center rounded-[inherit] relative z-10"
         style={{ padding: padding }}
       >

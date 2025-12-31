@@ -1,4 +1,4 @@
-import { useState, KeyboardEvent, useRef, useEffect } from 'react';
+import { useState, KeyboardEvent, useRef, useEffect, useLayoutEffect } from 'react';
 import { Send } from 'lucide-react';
 
 interface ChatInputProps {
@@ -7,10 +7,9 @@ interface ChatInputProps {
     hideSendButton?: boolean;
 }
 
-import GlassSurface from './GlassSurface';
-
 export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInputProps) {
     const [input, setInput] = useState('');
+    const [isMultiLine, setIsMultiLine] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const handleSend = () => {
@@ -30,44 +29,36 @@ export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInpu
         }
     };
 
-    useEffect(() => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setInput(e.target.value);
+    };
+
+    useLayoutEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+            const newHeight = textareaRef.current.scrollHeight;
+            textareaRef.current.style.height = `${newHeight}px`;
+            
+            // Check if textarea is multi-line
+            const lineHeight = 24;
+            setIsMultiLine(newHeight > lineHeight * 1.5);
         }
     }, [input]);
 
     return (
         <div className="p-0 bg-transparent">
             <div className={`relative max-w-4xl mx-auto flex items-end gap-2 ${hideSendButton ? 'justify-center' : ''}`}>
-                <div className="w-full">
-                    <GlassSurface
-                        borderRadius={32}
-                        borderWidth={0.5}
-                        backgroundOpacity={0.8}
-                        padding={16}
-                        blur={50}
-                        brightness={100}
-                        mixBlendMode="normal"
-                        width="100%"
-                        height="auto"
-                        className="min-h-[60px]"
-                    >
-                        <textarea
-                            ref={textareaRef}
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Type a message..."
-                            disabled={disabled}
-                            rows={1}
-                            className="w-full bg-transparent text-black border-none placeholder-black/50 focus:outline-none resize-none max-h-[200px] overflow-y-auto px-2 py-1"
-                            style={{ 
-                                height: 'auto',
-                                minHeight: '24px'
-                            }}
-                        />
-                    </GlassSurface>
+                <div className={`w-full backdrop-blur-sm bg-white/20 border border-white/50 p-3 transition-[border-radius] duration-300 ease-in-out ${isMultiLine ? 'rounded-xl' : 'rounded-3xl'}`}>
+                    <textarea
+                        ref={textareaRef}
+                        value={input}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Type a message..."
+                        disabled={disabled}
+                        rows={1}
+                        className="w-full bg-transparent text-white border-none placeholder-white/50 focus:outline-none resize-none max-h-24 overflow-y-auto px-3"
+                    />
                 </div>
                 {!hideSendButton && (
                     <button

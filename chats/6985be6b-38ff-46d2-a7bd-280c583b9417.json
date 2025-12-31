@@ -88,8 +88,18 @@
       "model": "gpt-3.5-turbo",
       "role": "assistant",
       "timestamp": 1766308834446
+    },
+    {
+      "content": "sdclskdcn",
+      "role": "user",
+      "timestamp": 1767166870782
+    },
+    {
+      "content": "Fvndf\nfdvdfv",
+      "role": "user",
+      "timestamp": 1767166913457
     }
   ],
-  "timestamp": 1766504681961,
+  "timestamp": 1767168134742,
   "title": "Teach me C++"
 }
