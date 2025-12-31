@@ -72,7 +72,7 @@ export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInpu
     return (
         <div className="p-0 bg-transparent">
             <div className={`relative max-w-4xl mx-auto flex items-end gap-2 ${hideSendButton ? 'justify-center' : ''}`}>
-                <div className={`w-full backdrop-blur-md bg-black/40 border border-white/70 p-3 transition-[border-radius] duration-600 ease-in-out ${isMultiLine ? 'rounded-2xl' : 'rounded-[32px]'}`}>
+                <div className={`w-full backdrop-blur-md bg-black/30 border border-white/30 shadow-2xl p-3 transition-all duration-300 ease-out hover:bg-black/40 focus-within:bg-black/50 focus-within:border-white/70 ${isMultiLine ? 'rounded-2xl' : 'rounded-[32px]'}`}>
                     <textarea
                         ref={textareaRef}
                         value={input}
@@ -81,14 +81,14 @@ export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInpu
                         placeholder="Type a message..."
                         disabled={disabled}
                         rows={1}
-                        className="w-full bg-transparent text-white border-none placeholder-white/50 focus:outline-none resize-none max-h-24 overflow-y-auto px-2"
+                        className="w-full bg-transparent text-white border-none placeholder-white/40 focus:outline-none resize-none max-h-24 overflow-y-auto px-2 font-light tracking-wide"
                     />
                 </div>
                 {!hideSendButton && (
                     <button
                         onClick={handleSend}
                         disabled={!input.trim() || disabled}
-                        className="p-4 rounded-xl bg-white/5 text-white/70 hover:text-white hover:bg-white/10 border border-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all mb-[1px] backdrop-blur-sm"
+                        className="p-4 rounded-full bg-white/10 text-white/90 hover:text-white hover:bg-white/20 border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all backdrop-blur-md shadow-lg hover:shadow-cyan-500/20"
                     >
                         <Send size={20} />
                     </button>
