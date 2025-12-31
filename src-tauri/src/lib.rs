@@ -57,6 +57,11 @@ fn list_chats() -> Result<Vec<serde_json::Value>, String> {
                         if let Ok(mut data) = serde_json::from_str::<serde_json::Value>(&content) {
                             // Add filename/timestamp if missing for sorting
                             if let Some(obj) = data.as_object_mut() {
+                                // Force ID to match filename to ensure deletion works
+                                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                                    obj.insert("id".to_string(), serde_json::Value::String(stem.to_string()));
+                                }
+
                                 if !obj.contains_key("timestamp") {
                                     if let Ok(metadata) = fs::metadata(&path) {
                                         if let Ok(created) = metadata.created() {
@@ -109,6 +114,7 @@ fn delete_chat(id: String) -> Result<(), String> {
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_log::Builder::default().build())
+    .plugin(tauri_plugin_http::init())
     .invoke_handler(tauri::generate_handler![save_chat, list_chats, load_chat, delete_chat])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

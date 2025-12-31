@@ -51,7 +51,7 @@ export function useChat() {
         try {
             const sessionId = id || crypto.randomUUID();
             if (!id && currentSessionId !== sessionId) {
-                 setCurrentSessionId(sessionId);
+                setCurrentSessionId(sessionId);
             }
 
             let title = 'New Chat';
@@ -83,22 +83,22 @@ export function useChat() {
 
         const timestamp = Date.now();
         const userMessage: Message = { role: 'user', content, timestamp };
-        
+
         // Use overrideHistory if provided to avoid stale state issues during edit/retry
         const historyBase = overrideHistory || messages;
         const newMessages = [...historyBase, userMessage];
-        
+
         setMessages(newMessages);
         setIsLoading(true);
         setError(null);
 
         try {
             const contextMessages = newMessages.map(({ role, content }) => ({ role, content }));
-            
+
             // Add placeholder for assistant with MODEL metadata
-            setMessages(prev => [...prev, { 
-                role: 'assistant', 
-                content: '', 
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: '',
                 timestamp: Date.now(),
                 model: selectedModel // Track model
             }]);
@@ -108,16 +108,30 @@ export function useChat() {
                 fullContent += chunk;
                 setMessages(prev => {
                     const updated = [...prev];
-                    updated[updated.length - 1] = { 
-                        ...updated[updated.length - 1], 
-                        content: fullContent 
+                    updated[updated.length - 1] = {
+                        ...updated[updated.length - 1],
+                        content: fullContent
                     };
                     return updated;
                 });
             }
         } catch (err) {
+            console.error('Error in sendMessage:', err);
             setError(err instanceof Error ? err.message : 'An error occurred');
-            setMessages(prev => prev.slice(0, -1));
+            // setMessages(prev => prev.slice(0, -1)); // Don't remove message on error so we can see what happened
+
+            // Append error to the message content so user sees it
+            setMessages(prev => {
+                const updated = [...prev];
+                const lastMsg = updated[updated.length - 1];
+                if (lastMsg.role === 'assistant') {
+                    updated[updated.length - 1] = {
+                        ...lastMsg,
+                        content: lastMsg.content + `\n\n**Error**: ${err instanceof Error ? err.message : 'An error occurred'}`
+                    };
+                }
+                return updated;
+            });
         } finally {
             setIsLoading(false);
         }
@@ -143,7 +157,7 @@ export function useChat() {
         const lastUserMsg = messages[lastUserIndex];
         const newHistory = messages.slice(0, lastUserIndex);
         // Don't setMessages here, let sendMessage handle it with override
-        
+
         await sendMessage(lastUserMsg.content, newHistory);
     };
 
@@ -179,7 +193,7 @@ export function useChat() {
             const session = await HistoryService.loadLocal(id);
             if (session) {
                 // Handle both legacy (messages array) and new (session object) if logic was loose, but Types enforce session now
-                setMessages(session.messages || session as any); 
+                setMessages(session.messages || session as any);
                 setCurrentSessionId(session.id || id);
             }
         } catch (error) {
@@ -190,13 +204,13 @@ export function useChat() {
 
     const downloadChat = () => {
         if (messages.length === 0) return;
-        
+
         // Save as pretty JSON with metadata
         const sessionData = {
-           id: currentSessionId || crypto.randomUUID(),
-           title: messages.find(m => m.role === 'user')?.content.slice(0, 30) || 'Chat Export',
-           messages,
-           timestamp: Date.now()
+            id: currentSessionId || crypto.randomUUID(),
+            title: messages.find(m => m.role === 'user')?.content.slice(0, 30) || 'Chat Export',
+            messages,
+            timestamp: Date.now()
         };
 
         const content = JSON.stringify(sessionData, null, 2);
