@@ -16,9 +16,17 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
     const [highlightedIndex, setHighlightedIndex] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
     const listRef = useRef<HTMLDivElement>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    // Reset deleting state when modal closes or search changes
+    useEffect(() => {
+        if (!isOpen || searchQuery) {
+            setDeletingId(null);
+        }
+    }, [isOpen, searchQuery]);
 
     // Filter sessions
-    const filteredSessions = sessions.filter(session => 
+    const filteredSessions = sessions.filter(session =>
         (session.title || 'Untitled').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -41,7 +49,7 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 setHighlightedIndex(prev => (prev - 1 + (filteredSessions.length || 1)) % (filteredSessions.length || 1));
-            } 
+            }
             // Action
             else if (e.key === 'Enter') {
                 e.preventDefault();
@@ -52,7 +60,7 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
             } else if (e.key === 'Escape') {
                 e.preventDefault();
                 onClose();
-            } 
+            }
             // Search / Type-ahead
             else if (e.key === 'Backspace') {
                 if (e.metaKey && onDelete && filteredSessions.length > 0) {
@@ -104,8 +112,8 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                 {/* Search Feedback */}
                 {searchQuery && (
                     <div className="px-4 py-2 border-b border-white/5 bg-white/5 text-sm text-cyan-400 font-mono">
-                         <span className="text-white/40 mr-2">Searching:</span>
-                         {searchQuery}<span className="animate-pulse">_</span>
+                        <span className="text-white/40 mr-2">Searching:</span>
+                        {searchQuery}<span className="animate-pulse">_</span>
                     </div>
                 )}
 
@@ -118,46 +126,57 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                         filteredSessions.map((session, index) => (
                             <div
                                 key={session.id}
-                                className={`w-full px-4 py-3 rounded-xl transition-colors flex items-center gap-3 group border-b border-white/5 last:border-0 relative ${
-                                    index === highlightedIndex
-                                        ? 'bg-white/10'
-                                        : 'hover:bg-white/5'
-                                }`}
+                                className={`w-full px-4 py-3 rounded-xl transition-colors flex items-center gap-3 group border-b border-white/5 last:border-0 relative ${index === highlightedIndex
+                                    ? 'bg-white/10'
+                                    : 'hover:bg-white/5'
+                                    }`}
                                 onClick={() => {
                                     onSelect(session.id);
                                     onClose();
                                 }}
                             >
-                                <div className={`w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center transition-all ${
-                                    index === highlightedIndex
-                                        ? 'from-cyan-500/30 to-blue-600/30 text-cyan-400'
-                                        : 'from-cyan-500/20 to-blue-600/20 text-cyan-400/70'
-                                }`}>
+                                <div className={`w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center transition-all ${index === highlightedIndex
+                                    ? 'from-cyan-500/30 to-blue-600/30 text-cyan-400'
+                                    : 'from-cyan-500/20 to-blue-600/20 text-cyan-400/70'
+                                    }`}>
                                     <FolderOpen size={18} />
                                 </div>
                                 <div className="flex-1 min-w-0 cursor-pointer">
-                                    <p className={`text-sm font-medium truncate ${
-                                        index === highlightedIndex ? 'text-white' : 'text-gray-200'
-                                    }`}>{session.title || 'Untitled Chat'}</p>
+                                    <p className={`text-sm font-medium truncate ${index === highlightedIndex ? 'text-white' : 'text-gray-200'
+                                        }`}>{session.title || 'Untitled Chat'}</p>
                                     <p className="text-xs text-gray-500 flex items-center gap-2">
                                         <span>{new Date(session.timestamp).toLocaleDateString()}</span>
                                         <span className="w-1 h-1 rounded-full bg-gray-600"></span>
                                         <span>{new Date(session.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </p>
                                 </div>
-                                
                                 {onDelete && (
                                     <button
                                         onClick={(e) => {
-                                            e.stopPropagation(); // Prevent selection
-                                            onDelete(session.id);
+                                            e.stopPropagation();
+                                            if (deletingId === session.id) {
+                                                console.log('Confirmed delete for:', session.id);
+                                                onDelete(session.id);
+                                                setDeletingId(null);
+                                            } else {
+                                                console.log('Requesting delete confirmation for:', session.id);
+                                                setDeletingId(session.id);
+                                                // Auto-reset after 3 seconds
+                                                setTimeout(() => setDeletingId(prev => prev === session.id ? null : prev), 3000);
+                                            }
                                         }}
-                                        className={`p-2 rounded-lg text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-all ${
-                                            index === highlightedIndex ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                        }`}
-                                        title="Delete Chat (Cmd+Backspace)"
+                                        className={`p-2 rounded-lg transition-all z-10 relative flex items-center gap-2 ${deletingId === session.id
+                                            ? 'bg-red-500 text-white hover:bg-red-600'
+                                            : 'text-white/20 hover:text-red-400 hover:bg-red-500/10'
+                                            } ${index === highlightedIndex ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                            }`}
+                                        title={deletingId === session.id ? "Click again to confirm" : "Delete Chat"}
                                     >
-                                        <Trash2 size={16} />
+                                        {deletingId === session.id ? (
+                                            <span className="text-xs font-bold px-1">Confirm</span>
+                                        ) : (
+                                            <Trash2 size={16} />
+                                        )}
                                     </button>
                                 )}
                             </div>

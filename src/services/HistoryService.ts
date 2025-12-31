@@ -32,8 +32,10 @@ export class HistoryService {
     }
 
     static async deleteLocal(id: string): Promise<void> {
+        console.log('HistoryService.deleteLocal invoking delete_chat with id:', id);
         try {
             await invoke('delete_chat', { id });
+            console.log('HistoryService.deleteLocal invoked successfully');
         } catch (error) {
             console.error('Failed to delete chat:', error);
             throw error;
