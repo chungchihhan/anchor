@@ -7,6 +7,7 @@ import { SettingsModal } from '@/components/SettingsModal';
 import { ShortcutsHelp } from '@/components/ShortcutsHelp';
 import { ModelSelector } from '@/components/ModelSelector';
 import { ChatHistoryModal } from '@/components/ChatHistoryModal';
+import LightRays from '@/components/LightRays';
 import { useChat } from '@/hooks/useChat';
 import { useShortcuts, Shortcut } from '@/hooks/useShortcuts';
 import { Info, Download, FolderOpen } from 'lucide-react';
@@ -117,7 +118,21 @@ export default function Home() {
     useShortcuts(shortcuts);
 
     return (
-        <main className="flex h-screen w-full overflow-hidden flex-col relative">
+        <main className="flex h-screen w-full overflow-hidden flex-col relative bg-black">
+            <div className="absolute inset-0 z-0">
+                <LightRays
+                    raysOrigin="top-center"
+                    raysColor="#00ffff"
+                    raysSpeed={1.5}
+                    lightSpread={0.8}
+                    rayLength={1.2}
+                    followMouse={true}
+                    mouseInfluence={0.1}
+                    noiseAmount={0.1}
+                    distortion={0.05}
+                    className="opacity-40"
+                />
+            </div>
             {/* Header */}
             <header className="flex items-center justify-between px-6 py-4 z-10 transition-all duration-300">
                 <div className="flex items-center gap-3">

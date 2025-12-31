@@ -72,7 +72,7 @@ export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInpu
     return (
         <div className="p-0 bg-transparent">
             <div className={`relative max-w-4xl mx-auto flex items-end gap-2 ${hideSendButton ? 'justify-center' : ''}`}>
-                <div className={`w-full backdrop-blur-sm bg-white/20 border border-white/50 p-3 transition-[border-radius] duration-600 ease-in-out ${isMultiLine ? 'rounded-2xl' : 'rounded-[32px]'}`}>
+                <div className={`w-full backdrop-blur-md bg-black/40 border border-white/70 p-3 transition-[border-radius] duration-600 ease-in-out ${isMultiLine ? 'rounded-2xl' : 'rounded-[32px]'}`}>
                     <textarea
                         ref={textareaRef}
                         value={input}
