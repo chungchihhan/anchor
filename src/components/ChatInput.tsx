@@ -35,13 +35,13 @@ export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInpu
 
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setInput(e.target.value);
-        
+
         // Update height and multi-line state immediately
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
             const newHeight = textareaRef.current.scrollHeight;
             textareaRef.current.style.height = `${newHeight}px`;
-            
+
             // Check if textarea is multi-line
             const lineHeight = 24;
             setIsMultiLine(newHeight > lineHeight * 1.5);
@@ -72,7 +72,7 @@ export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInpu
     return (
         <div className="p-0 bg-transparent">
             <div className={`relative max-w-4xl mx-auto flex items-end gap-2 ${hideSendButton ? 'justify-center' : ''}`}>
-                <div className={`w-full backdrop-blur-sm bg-white/20 border border-white/50 p-3 transition-[border-radius] duration-300 ease-in-out ${isMultiLine ? 'rounded-2xl' : 'rounded-[24px]'}`}>
+                <div className={`w-full backdrop-blur-sm bg-white/20 border border-white/50 p-3 transition-[border-radius] duration-600 ease-in-out ${isMultiLine ? 'rounded-2xl' : 'rounded-[32px]'}`}>
                     <textarea
                         ref={textareaRef}
                         value={input}
@@ -81,7 +81,7 @@ export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInpu
                         placeholder="Type a message..."
                         disabled={disabled}
                         rows={1}
-                        className="w-full bg-transparent text-white border-none placeholder-white/50 focus:outline-none resize-none max-h-24 overflow-y-auto px-3"
+                        className="w-full bg-transparent text-white border-none placeholder-white/50 focus:outline-none resize-none max-h-24 overflow-y-auto px-2"
                     />
                 </div>
                 {!hideSendButton && (
