@@ -148,6 +148,13 @@ export default function Home() {
                         </svg>
                     </div>
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={loadFiles}
+                            className="p-2 rounded-lg text-white/50 hover:text-white transition-colors hover:bg-white/5 mr-1"
+                            title="Open Chat"
+                        >
+                            <FolderOpen size={18} />
+                        </button>
                         <span className="text-white font-medium text-sm tracking-wide drop-shadow-md">ANCHOR</span>
                         <span className="text-white/20 text-xs">/</span>
                         <button
@@ -168,13 +175,6 @@ export default function Home() {
                             <Download size={18} />
                         </button>
                     )}
-                    <button
-                        onClick={loadFiles}
-                        className="p-2 rounded-lg text-white/50 hover:text-white transition-colors hover:bg-white/5"
-                        title="Open Chat"
-                    >
-                        <FolderOpen size={18} />
-                    </button>
                     <div className="w-px h-4 bg-white/10 mx-1" />
                     <div className="flex items-center gap-2 text-xs text-white/30 px-2 py-1 rounded-md border border-white/5 cursor-help hover:bg-white/5 transition-colors" title="View Shortcuts">
                         <span className="font-mono text-[10px] leading-none">^</span>
@@ -232,11 +232,13 @@ export default function Home() {
             </div>
 
             {/* Error Toast */}
-            {error && (
-                <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-red-500/90 text-white px-4 py-2 rounded-lg shadow-lg backdrop-blur-sm text-sm animate-in fade-in slide-in-from-top-2">
-                    {error}
-                </div>
-            )}
+            {
+                error && (
+                    <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-red-500/90 text-white px-4 py-2 rounded-lg shadow-lg backdrop-blur-sm text-sm animate-in fade-in slide-in-from-top-2">
+                        {error}
+                    </div>
+                )
+            }
 
             {/* Shortcuts Help Overlay */}
             <ShortcutsHelp isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} shortcuts={shortcuts} />
@@ -263,6 +265,6 @@ export default function Home() {
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
             />
-        </main>
+        </main >
     );
 }
