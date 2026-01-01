@@ -122,7 +122,7 @@ export default function Home() {
             <div className="absolute inset-0 z-0">
                 <LightRays
                     raysOrigin="top-center"
-                    raysColor="#00ffff"
+                    raysColor="#7dd3fc"
                     raysSpeed={1.5}
                     lightSpread={0.8}
                     rayLength={1.2}
@@ -159,7 +159,7 @@ export default function Home() {
                         <span className="text-white/20 text-xs">/</span>
                         <button
                             onClick={() => setIsModelSelectorOpen(true)}
-                            className="text-cyan-400 text-xs font-mono uppercase tracking-wider bg-cyan-900/10 px-2 py-0.5 rounded border border-cyan-500/10 backdrop-blur-sm hover:bg-cyan-500/20 transition-colors"
+                            className="text-blue-300 text-xs font-mono uppercase tracking-wider bg-blue-900/10 px-2 py-0.5 rounded border border-blue-400/10 backdrop-blur-sm hover:bg-blue-400/20 transition-colors"
                         >
                             {selectedModel}
                         </button>
@@ -190,7 +190,7 @@ export default function Home() {
                         <div className="w-full max-w-2xl">
                             <div className="text-center mb-10 relative">
                                 {/* Ambient Background Glow */}
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
 
                                 <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/40 mb-3 drop-shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
                                     How can I help you?

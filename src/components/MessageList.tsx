@@ -97,7 +97,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                     {/* Assistant Avatar - Hide in Compact Mode */}
                     {displayMode === 'chat' && msg.role === 'assistant' && (
                         <div className="flex flex-col items-center gap-1">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center flex-shrink-0 mt-1 shadow-lg shadow-cyan-500/20">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-slate-300 to-blue-400 flex items-center justify-center flex-shrink-0 mt-1 shadow-lg shadow-blue-400/20">
                                 <Bot size={16} className="text-white" />
                             </div>
                         </div>
@@ -139,7 +139,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                         </button>
                                         <button
                                             onClick={() => saveEdit(index)}
-                                            className="px-4 py-2 rounded-full text-xs font-medium bg-white/10 hover:bg-white/20 text-white transition-all shadow-lg hover:shadow-cyan-500/20 border border-white/10 backdrop-blur-md"
+                                            className="px-4 py-2 rounded-full text-xs font-medium bg-white/10 hover:bg-white/20 text-white transition-all shadow-lg hover:shadow-blue-400/20 border border-white/10 backdrop-blur-md"
                                         >
                                             Save & Generate
                                         </button>
@@ -149,9 +149,9 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                 <>
                                     {msg.role === 'assistant' && msg.content === '' && isLoading && index === messages.length - 1 ? (
                                         <div className="flex items-center gap-2 h-6">
-                                            <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                            <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                            <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                            <div className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                            <div className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                            <div className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                         </div>
                                     ) : (
                                         <div className={`leading-normal ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>

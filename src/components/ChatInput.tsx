@@ -88,7 +88,7 @@ export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInpu
                     <button
                         onClick={handleSend}
                         disabled={!input.trim() || disabled}
-                        className="p-4 rounded-full bg-white/10 text-white/90 hover:text-white hover:bg-white/20 border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all backdrop-blur-md shadow-lg hover:shadow-cyan-500/20"
+                        className="p-4 rounded-full bg-white/10 text-white/90 hover:text-white hover:bg-white/20 border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all backdrop-blur-md shadow-lg hover:shadow-blue-400/20"
                     >
                         <Send size={20} />
                     </button>
