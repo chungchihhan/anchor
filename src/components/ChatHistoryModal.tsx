@@ -1,22 +1,49 @@
 import { useEffect, useState, useRef } from 'react';
-import { FolderOpen } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { FolderOpen, Trash2, Copy, Check } from 'lucide-react';
 import { ChatSession } from '@/types';
-
-import { Trash2 } from 'lucide-react';
 
 interface ChatHistoryModalProps {
     isOpen: boolean;
     onClose: () => void;
     sessions: ChatSession[];
     onSelect: (id: string) => void;
-    onDelete?: (id: string) => void; // Optional for backward combat
+    onDelete?: (id: string) => void;
 }
+
+const TableBlock = ({ node, className, children, ...props }: any) => {
+    return (
+        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm">
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
+                <span>Table</span>
+            </div>
+            <div className="overflow-x-auto p-2">
+                <table
+                    className={`w-full text-left border-separate border-spacing-0 text-sm ${className || ''}`}
+                    {...props}
+                >
+                    {children}
+                </table>
+            </div>
+        </div>
+    );
+};
 
 export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete }: ChatHistoryModalProps) {
     const [highlightedIndex, setHighlightedIndex] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
     const listRef = useRef<HTMLDivElement>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [msgsCopied, setMsgsCopied] = useState<number | null>(null);
+
+    const handleCopyMessage = (content: string, index: number) => {
+        navigator.clipboard.writeText(content);
+        setMsgsCopied(index);
+        setTimeout(() => setMsgsCopied(null), 2000);
+    };
 
     // Reset deleting state when modal closes or search changes
     useEffect(() => {
@@ -122,7 +149,7 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                     setSearchQuery(e.target.value);
                                     setHighlightedIndex(0);
                                 }}
-                                placeholder="Search chats..."
+                                placeholder="Search titles..."
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-cyan-500/50 focus:bg-white/10 transition-all"
                                 autoFocus
                             />
@@ -193,24 +220,121 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                     <div className="flex-1 flex flex-col bg-black/40 relative">
                         {selectedSession ? (
                             <>
-                                <div className="p-4 border-b border-white/5 bg-white/[0.02]">
+                                <div className="p-4 bg-gradient-to-b from-black/60 to-transparent backdrop-blur-sm flex items-center justify-between">
                                     <h4 className="text-white/90 font-medium truncate text-lg">{selectedSession.title || 'Untitled Chat'}</h4>
-                                    <p className="text-xs text-white/40 mt-1 font-mono">
+                                    <p className="text-xs text-white/40 font-mono shrink-0 ml-4">
                                         {selectedSession.messages.length} messages
                                     </p>
                                 </div>
-                                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar relative" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)' }}>
                                     {selectedSession.messages.map((msg, idx) => (
                                         <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                                             <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
                                                 ? 'bg-white/10 text-white rounded-br-sm'
                                                 : 'bg-white/5 text-gray-300 rounded-bl-sm'
                                                 }`}>
-                                                <p className="whitespace-pre-wrap line-clamp-[20]">{msg.content}</p>
+                                                <div className={`leading-normal ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                                                    <ReactMarkdown
+                                                        remarkPlugins={[remarkGfm]}
+                                                        components={{
+                                                            p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                                                            h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-3 mt-4" {...props} />,
+                                                            h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 mt-3" {...props} />,
+                                                            h3: ({ node, ...props }) => <h3 className="text-base font-semibold mb-2 mt-3" {...props} />,
+                                                            ul: ({ node, ...props }) => <ul className={`list-disc mb-3 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
+                                                            ol: ({ node, ...props }) => <ol className={`list-decimal mb-3 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
+                                                            li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                                                            blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-3 italic bg-white/5 rounded-r" {...props} />,
+                                                            hr: ({ node, ...props }) => <hr className="my-6 border-t-2 border-white/20" {...props} />,
+                                                            pre: ({ children }) => <>{children}</>,
+                                                            table: TableBlock,
+                                                            thead: ({ node, ...props }) => <thead className="bg-white/5 text-xs uppercase font-medium text-white/60" {...props} />,
+                                                            tbody: ({ node, ...props }) => <tbody className="text-gray-300" {...props} />,
+                                                            tr: ({ node, ...props }) => <tr className="" {...props} />,
+                                                            th: ({ node, ...props }) => <th className="px-4 py-2 font-medium first:rounded-tl-md last:rounded-tr-md border-b border-white/5" {...props} />,
+                                                            td: ({ node, ...props }) => <td className="px-4 py-2 border border-white/5 first:rounded-bl-md last:rounded-br-md" {...props} />,
+                                                            code({ node, inline, className, children, ...props }: any) {
+                                                                const isMatch = /language-(\w+)/.exec(className || '');
+                                                                const hasNewLine = String(children).replace(/\n$/, '').includes('\n');
+                                                                const isBlock = isMatch || hasNewLine;
+                                                                const [copied, setCopied] = useState(false);
+                                                                const codeContent = String(children).replace(/\n$/, '');
+
+                                                                const handleCopy = () => {
+                                                                    navigator.clipboard.writeText(codeContent);
+                                                                    setCopied(true);
+                                                                    setTimeout(() => setCopied(false), 2000);
+                                                                };
+
+                                                                return isBlock ? (
+                                                                    <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-3 bg-black/50 text-left backdrop-blur-sm">
+                                                                        <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
+                                                                            <span>{isMatch ? isMatch[1] : 'code'}</span>
+                                                                            <button onClick={handleCopy} className="hover:text-white transition-colors">
+                                                                                {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                                                                            </button>
+                                                                        </div>
+                                                                        <div className="overflow-x-auto">
+                                                                            <SyntaxHighlighter
+                                                                                {...props}
+                                                                                style={oneDark}
+                                                                                language={isMatch ? isMatch[1] : 'text'}
+                                                                                PreTag="div"
+                                                                                wrapLongLines={true}
+                                                                                codeTagProps={{ style: { backgroundColor: 'transparent' } }}
+                                                                                customStyle={{ margin: 0, padding: '1rem', background: 'transparent', lineHeight: '1.5' }}
+                                                                            >
+                                                                                {codeContent}
+                                                                            </SyntaxHighlighter>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <code className="bg-white/10 px-1.5 py-0.5 rounded text-cyan-300 font-mono text-xs" {...props}>
+                                                                        {children}
+                                                                    </code>
+                                                                );
+                                                            },
+                                                        }}
+                                                    >
+                                                        {msg.content}
+                                                    </ReactMarkdown>
+                                                </div>
                                             </div>
-                                            <span className="text-[10px] text-white/20 mt-1 px-1">
-                                                {msg.role === 'user' ? 'You' : 'Anchor'}
-                                            </span>
+                                            {/* Meta and Actions */}
+                                            <div className={`flex items-center gap-2 mt-1.5 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                                                {msg.timestamp && (
+                                                    <span className="text-[10px] text-white/30 font-mono">
+                                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                )}
+
+                                                {msg.role === 'assistant' && msg.content !== '' && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleCopyMessage(msg.content, idx)}
+                                                            className="text-white/30 hover:text-white transition-colors p-1"
+                                                            title="Copy Message"
+                                                        >
+                                                            {msgsCopied === idx ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                                                        </button>
+                                                        {msg.model && (
+                                                            <span className="text-xs text-white/40 font-mono py-0.5 rounded-md">
+                                                                {msg.model}
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                )}
+
+                                                {msg.role === 'user' && (
+                                                    <button
+                                                        onClick={() => handleCopyMessage(msg.content, idx)}
+                                                        className="text-white/30 hover:text-white transition-colors p-1"
+                                                        title="Copy Message"
+                                                    >
+                                                        {msgsCopied === idx ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                     <div ref={previewEndRef} />

@@ -167,6 +167,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                     ol: ({ node, ...props }) => <ol className={`list-decimal mb-4 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
                                                     li: ({ node, ...props }) => <li className="mb-1" {...props} />,
                                                     blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-4 italic bg-white/5 rounded-r" {...props} />,
+                                                    hr: ({ node, ...props }) => <hr className="my-6 border-t-2 border-white/20" {...props} />,
                                                     pre: ({ children }) => <>{children}</>,
 
                                                     // Table Elements
@@ -253,17 +254,31 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                     >
                                         <RotateCcw size={12} />
                                     </button>
+                                    {msg.model && (
+                                        <span className="text-xs text-white/40 font-mono py-0.5 rounded-md">
+                                            {msg.model}
+                                        </span>
+                                    )}
                                 </>
                             )}
 
                             {msg.role === 'user' && !isLoading && (
-                                <button
-                                    onClick={() => startEditing(index, msg.content)}
-                                    className="text-white/30 hover:text-white transition-colors p-1"
-                                    title="Edit Message"
-                                >
-                                    <Pencil size={12} />
-                                </button>
+                                <>
+                                    <button
+                                        onClick={() => handleCopyMessage(msg.content, index)}
+                                        className="text-white/30 hover:text-white transition-colors p-1"
+                                        title="Copy Message"
+                                    >
+                                        {msgsCopied === index ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                                    </button>
+                                    <button
+                                        onClick={() => startEditing(index, msg.content)}
+                                        className="text-white/30 hover:text-white transition-colors p-1"
+                                        title="Edit Message"
+                                    >
+                                        <Pencil size={12} />
+                                    </button>
+                                </>
                             )}
                         </div>
                     </div>
