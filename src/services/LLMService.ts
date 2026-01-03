@@ -4,26 +4,44 @@ import { StorageService } from './StorageService';
 export class LLMService {
     static async getModels(): Promise<string[]> {
         const settings = StorageService.getSettings();
-        const apiKey = process.env.NEXT_PUBLIC_API_KEY || settings.apiKey;
-        let endpointUrl = process.env.NEXT_PUBLIC_API_BASE_URL || settings.endpointUrl;
+        const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+        let apiKey = process.env.NEXT_PUBLIC_API_KEY || settings.apiKey;
+        let endpointUrl = envUrl || settings.endpointUrl;
 
-        if (!apiKey) throw new Error('API Key missing');
+        console.log('URL Source:', envUrl ? 'Environment Variable' : 'Settings');
+        console.log('Target Endpoint:', endpointUrl);
+
+        if (!apiKey) return [];
+
+        // Sanitize inputs
+        apiKey = apiKey.trim();
+        endpointUrl = endpointUrl.trim();
 
         // Construct models endpoint (remove /chat/completions if present, append /models)
         const baseUrl = endpointUrl.replace(/\/chat\/completions\/?$/, '').replace(/\/$/, '');
         const modelsUrl = `${baseUrl}/models`;
 
+        console.log('Fetching models from:', modelsUrl);
+        console.log('API Key length:', apiKey.length);
+        // Check for non-ASCII characters
+        if (/[^\x00-\x7F]/.test(apiKey)) {
+            console.error('API Key contains non-ASCII characters!');
+        }
+
         try {
             const response = await fetch(modelsUrl, {
                 method: 'GET',
+                credentials: 'omit',
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'curl/8.7.1',
+                    'Accept': '*/*'
                 }
             });
 
             if (!response.ok) throw new Error(`Failed to fetch models: ${response.status}`);
-            
+
             const data = await response.json();
             // Expecting OpenAI format: { data: [{ id: 'model-id', ... }] }
             if (data.data && Array.isArray(data.data)) {
@@ -38,32 +56,143 @@ export class LLMService {
 
     static async *streamMessage(messages: Message[], model?: string): AsyncGenerator<string, void, unknown> {
         const settings = StorageService.getSettings();
-        const apiKey = process.env.NEXT_PUBLIC_API_KEY || settings.apiKey;
-        let endpointUrl = process.env.NEXT_PUBLIC_API_BASE_URL || settings.endpointUrl;
+        const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+        let apiKey = process.env.NEXT_PUBLIC_API_KEY || settings.apiKey;
+        let endpointUrl = envUrl || settings.endpointUrl;
+
+        console.log('URL Source:', envUrl ? 'Environment Variable' : 'Settings');
+        console.log('Target Endpoint:', endpointUrl);
 
         if (!apiKey) throw new Error('API Key missing');
 
-        // Fix URL for chat completions
-        if (endpointUrl && !endpointUrl.endsWith('/chat/completions')) {
-            endpointUrl = endpointUrl.replace(/\/$/, '') + '/chat/completions';
+        // Sanitize inputs
+        apiKey = apiKey.trim();
+        // Remove any newlines or carriage returns that might have been pasted in
+        if (/[\r\n]/.test(apiKey)) {
+            console.warn('API Key contains newlines, stripping them');
+            apiKey = apiKey.replace(/[\r\n]+/g, '');
         }
+
+        // Debug: Check for unusual characters
+        console.log('API Key length after trim:', apiKey.length);
+        console.log('API Key starts with:', apiKey.substring(0, 20));
+        console.log('API Key ends with:', apiKey.substring(apiKey.length - 20));
+
+        endpointUrl = endpointUrl.trim();
+
+        // Fix URL for chat completions
+        let cleanUrl = endpointUrl.replace(/\/$/, '');
+        if (!cleanUrl.endsWith('/chat/completions')) {
+            cleanUrl += '/chat/completions';
+        }
+        endpointUrl = cleanUrl;
 
         const payload = {
             messages,
             model: model || settings.modelName || 'gpt-3.5-turbo',
             stream: true,
+            max_tokens: 1000,
+            temperature: 0.8,
+            top_p: 1,
+            presence_penalty: 1,
         };
 
-        const response = await fetch(endpointUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify(payload),
-        });
+        console.log('Stream request sent to:', endpointUrl);
 
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        // Log key details for debugging (safe version)
+        console.log('API Key length:', apiKey.length);
+
+        let response;
+        try {
+            response = await fetch(endpointUrl, {
+                method: 'POST',
+                credentials: 'omit',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                    'User-Agent': 'curl/8.7.1',
+                    'Accept': '*/*'
+                },
+                body: JSON.stringify(payload)
+            });
+        } catch (e) {
+            console.error('Fetch failed:', e);
+            throw e;
+        }
+
+        console.log('Response status:', response.status);
+        console.log('Response url:', response.url);
+
+        try {
+            // Safely log headers
+            const headers: Record<string, string> = {};
+            response.headers.forEach((value, key) => {
+                headers[key] = value;
+            });
+            console.log('Response headers:', headers);
+        } catch (e) {
+            console.warn('Failed to log headers:', e);
+        }
+
+        if (!response.ok) {
+            let errorText = '';
+            let errorData = null;
+            try {
+                errorText = await response.text();
+                console.error('API Error Body:', errorText);
+
+                // Try to parse as JSON for more details
+                try {
+                    errorData = JSON.parse(errorText);
+                    console.error('Parsed error:', errorData);
+                } catch (e) {
+                    // Not JSON, that's fine
+                }
+            } catch (e) {
+                console.error('Failed to read error body:', e);
+            }
+
+            throw new Error(`API Error ${response.status}: ${errorData?.message || errorText || response.statusText}`);
+        }
+
+        const contentType = response.headers.get('content-type') || '';
+
+        // If not an event stream, check if it's JSON and extract content
+        if (!contentType.includes('text/event-stream')) {
+            console.log('Response is not event-stream, checking for JSON');
+            const text = await response.text();
+            console.log('Raw text length:', text.length);
+
+            if (!text.trim()) {
+                yield "```\n[Received empty response from server]\n```";
+                return;
+            }
+
+            try {
+                const data = JSON.parse(text);
+                // Check if it's a standard chat completion response
+                if (data.choices && data.choices[0] && data.choices[0].message) {
+                    const content = data.choices[0].message.content;
+                    if (content) {
+                        yield content;
+                        return;
+                    }
+                }
+                // Check for error format
+                if (data.error && data.error.message) {
+                    yield `**API Error**: ${data.error.message}`;
+                    return;
+                }
+            } catch (e) {
+                // Not JSON, fall through to raw text
+                console.log('Failed to parse response as JSON:', e);
+            }
+
+            // Fallback: Wrap in code block to ensure it's visible
+            yield "```\n" + text + "\n```";
+            return;
+        }
+
         if (!response.body) throw new Error('No response body');
 
         const reader = response.body.getReader();
@@ -72,16 +201,21 @@ export class LLMService {
 
         while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+                console.log('Stream done');
+                break;
+            }
 
-            buffer += decoder.decode(value, { stream: true });
+            const chunk = decoder.decode(value, { stream: true });
+            console.log('Received chunk:', chunk); // DEBUG LOG
+            buffer += chunk;
             const lines = buffer.split('\n');
             buffer = lines.pop() || '';
 
             for (const line of lines) {
                 if (line.trim() === '') continue;
                 if (line.includes('[DONE]')) return;
-                
+
                 if (line.startsWith('data: ')) {
                     try {
                         const data = JSON.parse(line.slice(6));
