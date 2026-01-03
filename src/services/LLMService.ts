@@ -91,7 +91,7 @@ export class LLMService {
             messages,
             model: model || settings.modelName || 'gpt-3.5-turbo',
             stream: true,
-            max_tokens: 1000,
+            max_tokens: 4096,  // Increased from 1000 to allow longer responses
             temperature: 0.8,
             top_p: 1,
             presence_penalty: 1,
@@ -104,6 +104,10 @@ export class LLMService {
 
         let response;
         try {
+            // Create an AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
             response = await fetch(endpointUrl, {
                 method: 'POST',
                 credentials: 'omit',
@@ -113,10 +117,18 @@ export class LLMService {
                     'User-Agent': 'curl/8.7.1',
                     'Accept': '*/*'
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: controller.signal,
+                // Add keepalive for better connection stability
+                keepalive: true
             });
+
+            clearTimeout(timeoutId);
         } catch (e) {
             console.error('Fetch failed:', e);
+            if (e instanceof Error && e.name === 'AbortError') {
+                throw new Error('Request timeout - please check your connection and try again');
+            }
             throw e;
         }
 
@@ -199,32 +211,46 @@ export class LLMService {
         const decoder = new TextDecoder();
         let buffer = '';
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-                console.log('Stream done');
-                break;
-            }
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    console.log('Stream done');
+                    break;
+                }
 
-            const chunk = decoder.decode(value, { stream: true });
-            console.log('Received chunk:', chunk); // DEBUG LOG
-            buffer += chunk;
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
+                const chunk = decoder.decode(value, { stream: true });
+                console.log('Received chunk:', chunk); // DEBUG LOG
+                buffer += chunk;
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
 
-            for (const line of lines) {
-                if (line.trim() === '') continue;
-                if (line.includes('[DONE]')) return;
+                for (const line of lines) {
+                    if (line.trim() === '') continue;
+                    if (line.includes('[DONE]')) return;
 
-                if (line.startsWith('data: ')) {
-                    try {
-                        const data = JSON.parse(line.slice(6));
-                        const content = data.choices[0]?.delta?.content || '';
-                        if (content) yield content;
-                    } catch (e) {
-                        console.warn('Failed to parse SSE message', line);
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            const content = data.choices[0]?.delta?.content || '';
+                            if (content) yield content;
+                        } catch (e) {
+                            console.warn('Failed to parse SSE message', line);
+                        }
                     }
                 }
+            }
+        } catch (e) {
+            console.error('Stream reading error:', e);
+            // Release the reader before throwing
+            reader.releaseLock();
+            throw new Error('Stream interrupted - connection may have been lost');
+        } finally {
+            // Ensure reader is always released
+            try {
+                reader.releaseLock();
+            } catch (e) {
+                // Reader may already be released
             }
         }
     }
