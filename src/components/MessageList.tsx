@@ -224,7 +224,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                     h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
                                                     h2: ({ node, ...props }) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
                                                     h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mb-2 mt-4" {...props} />,
-                                                    ul: ({ node, ...props }) => <ul className={`list-disc mb-4 ${msg.role === 'user' ? 'list-inside' : 'pl-2 ml-2'}`} {...props} />,
+                                                    ul: ({ node, ...props }) => <ul className={`list-disc mb-4 ${msg.role === 'user' ? 'list-inside' : 'pl-4 ml-2'}`} {...props} />,
                                                     ol: ({ node, ...props }) => <ol className={`list-decimal mb-4 ${msg.role === 'user' ? 'list-inside' : 'pl-4 ml-2'}`} {...props} />,
                                                     li: ({ node, ...props }) => <li className="mb-1" {...props} />,
                                                     blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-4 italic bg-white/5 rounded-r" {...props} />,

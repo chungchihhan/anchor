@@ -87,17 +87,62 @@ export class LLMService {
         }
         endpointUrl = cleanUrl;
 
-        const payload = {
+        const modelName = model || settings.modelName || 'gpt-3.5-turbo';
+        const lowerModel = modelName.toLowerCase();
+
+        // Base payload
+        const payload: any = {
             messages,
-            model: model || settings.modelName || 'gpt-3.5-turbo',
+            model: modelName,
             stream: true,
             max_tokens: 4096,  // Increased from 1000 to allow longer responses
-            temperature: 0.8,
-            top_p: 1,
-            presence_penalty: 1,
+            temperature: 0.1,
+            // Note: top_p is removed as Claude models don't support both temperature and top_p
+            // presence_penalty is also removed as it's not supported by Claude models
         };
 
+        // Add thinking/reasoning parameters based on model
+        // Claude models: extended thinking
+        if (lowerModel.includes('claude-4') || lowerModel.includes('claude-3.7') || lowerModel.includes('claude-3-7')) {
+            payload.thinking = {
+                type: "enabled",
+                budget_tokens: 10000  // Configurable: 1024 - 128000
+            };
+        }
+
+        // DeepSeek R1: thinking mode
+        if (lowerModel.includes('deepseek') && (lowerModel.includes('r1') || lowerModel.includes('reasoner'))) {
+            payload.thinking = {
+                type: "enabled"
+            };
+        }
+
+        // OpenAI o1/o3: reasoning effort
+        if (lowerModel.includes('o1') || lowerModel.includes('o3')) {
+            payload.reasoning_effort = "high";  // Options: "low", "medium", "high"
+            // Note: Some endpoints may require nested format:
+            // payload.reasoning = { effort: "high" };
+        }
+
+        // Google Gemini 3: thinking level
+        if (lowerModel.includes('gemini') && lowerModel.includes('3')) {
+            payload.thinking_level = "high";  // Options: "minimal", "low", "medium", "high"
+        }
+
+        // Google Gemini 2.5: thinking budget
+        if (lowerModel.includes('gemini') && lowerModel.includes('2.5')) {
+            payload.thinkingBudget = -1;  // -1 for dynamic, 0 to disable, or 128-32768
+        }
+
+        // Google Gemini 2.0 Flash Thinking: automatic (model-based)
+        // No additional parameters needed, controlled by model name
+
         console.log('Stream request sent to:', endpointUrl);
+        console.log('Thinking mode enabled:', !!(payload.thinking || payload.reasoning_effort || payload.thinking_level || payload.thinkingBudget));
+        if (payload.thinking) console.log('Thinking config:', payload.thinking);
+        if (payload.reasoning_effort) console.log('Reasoning effort:', payload.reasoning_effort);
+        if (payload.thinking_level) console.log('Thinking level:', payload.thinking_level);
+        if (payload.thinkingBudget) console.log('Thinking budget:', payload.thinkingBudget);
 
         // Log key details for debugging (safe version)
         console.log('API Key length:', apiKey.length);
@@ -232,7 +277,24 @@ export class LLMService {
                     if (line.startsWith('data: ')) {
                         try {
                             const data = JSON.parse(line.slice(6));
-                            const content = data.choices[0]?.delta?.content || '';
+
+                            // Handle different response formats
+                            // OpenAI/DeepSeek format: delta.content
+                            let content = data.choices[0]?.delta?.content || '';
+
+                            // Claude format: content blocks (thinking + text)
+                            if (!content && data.delta?.content) {
+                                const contentBlocks = Array.isArray(data.delta.content) ? data.delta.content : [data.delta.content];
+                                for (const block of contentBlocks) {
+                                    if (block.type === 'thinking' && block.thinking) {
+                                        // Wrap Claude thinking in <think> tags for consistent display
+                                        content += `<think>${block.thinking}</think>\n\n`;
+                                    } else if (block.type === 'text' && block.text) {
+                                        content += block.text;
+                                    }
+                                }
+                            }
+
                             if (content) yield content;
                         } catch (e) {
                             console.warn('Failed to parse SSE message', line);
