@@ -7,6 +7,7 @@ import { SettingsModal } from '@/components/SettingsModal';
 import { ShortcutsHelp } from '@/components/ShortcutsHelp';
 import { ModelSelector } from '@/components/ModelSelector';
 import { ChatHistoryModal } from '@/components/ChatHistoryModal';
+import { TableOfContents } from '@/components/TableOfContents';
 import LightRays from '@/components/LightRays';
 import { useChat } from '@/hooks/useChat';
 import { useShortcuts, Shortcut } from '@/hooks/useShortcuts';
@@ -266,6 +267,9 @@ export default function Home() {
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
             />
+
+            {/* Table of Contents */}
+            <TableOfContents messages={messages} />
         </main >
     );
 }

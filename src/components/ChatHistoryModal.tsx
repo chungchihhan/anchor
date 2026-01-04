@@ -32,6 +32,72 @@ const TableBlock = ({ node, className, children, ...props }: any) => {
     );
 };
 
+const ThinkBlock = ({ children }: { children: string }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    return (
+        <div className="my-3 rounded-md border border-white/10 bg-white/5 overflow-hidden">
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/60 hover:bg-white/5 transition-colors"
+            >
+                <svg
+                    className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="font-mono">Thinking...</span>
+            </button>
+            {isExpanded && (
+                <div className="px-3 py-2 text-xs text-white/50 border-t border-white/10 bg-black/20 font-mono leading-relaxed whitespace-pre-wrap">
+                    {children}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Preprocess content to handle <think> tags
+const preprocessContent = (content: any): { processedContent: string; thinkBlocks: string[] } => {
+    const thinkBlocks: string[] = [];
+
+    // Guard against undefined/null/non-string content
+    let processedContent = '';
+
+    if (typeof content === 'string') {
+        processedContent = content;
+    } else if (Array.isArray(content)) {
+        // Handle array format (e.g., from image functionality)
+        processedContent = content
+            .map(item => {
+                if (typeof item === 'string') return item;
+                if (item?.type === 'text') return item.text || '';
+                return '';
+            })
+            .join('\n');
+    } else if (content && typeof content === 'object') {
+        // Handle object format
+        processedContent = content.text || content.content || '';
+    }
+
+    // Find all <think>...</think> blocks
+    const thinkRegex = /<think>\s*([\s\S]*?)\s*<\/think>/g;
+    let match;
+    let index = 0;
+
+    while ((match = thinkRegex.exec(processedContent)) !== null) {
+        thinkBlocks.push(match[1].trim());
+        // Replace with a placeholder that we can identify later
+        processedContent = processedContent.replace(match[0], `__THINK_BLOCK_${index}__`);
+        index++;
+    }
+
+    return { processedContent, thinkBlocks };
+};
+
 export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete }: ChatHistoryModalProps) {
     const [highlightedIndex, setHighlightedIndex] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
@@ -234,70 +300,90 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                                 : 'bg-white/5 text-gray-300 rounded-bl-sm'
                                                 }`}>
                                                 <div className={`leading-normal ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                                                    <ReactMarkdown
-                                                        remarkPlugins={[remarkGfm]}
-                                                        components={{
-                                                            p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                                                            h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-3 mt-4" {...props} />,
-                                                            h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 mt-3" {...props} />,
-                                                            h3: ({ node, ...props }) => <h3 className="text-base font-semibold mb-2 mt-3" {...props} />,
-                                                            ul: ({ node, ...props }) => <ul className={`list-disc mb-3 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
-                                                            ol: ({ node, ...props }) => <ol className={`list-decimal mb-3 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
-                                                            li: ({ node, ...props }) => <li className="mb-1" {...props} />,
-                                                            blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-3 italic bg-white/5 rounded-r" {...props} />,
-                                                            hr: ({ node, ...props }) => <hr className="my-6 border-t-2 border-white/20" {...props} />,
-                                                            pre: ({ children }) => <>{children}</>,
-                                                            table: TableBlock,
-                                                            thead: ({ node, ...props }) => <thead className="bg-white/5 text-xs uppercase font-medium text-white/60" {...props} />,
-                                                            tbody: ({ node, ...props }) => <tbody className="text-gray-300" {...props} />,
-                                                            tr: ({ node, ...props }) => <tr className="" {...props} />,
-                                                            th: ({ node, ...props }) => <th className="px-4 py-2 font-medium first:rounded-tl-md last:rounded-tr-md border-b border-white/5" {...props} />,
-                                                            td: ({ node, ...props }) => <td className="px-4 py-2 border border-white/5 first:rounded-bl-md last:rounded-br-md" {...props} />,
-                                                            code({ node, inline, className, children, ...props }: any) {
-                                                                const isMatch = /language-(\w+)/.exec(className || '');
-                                                                const hasNewLine = String(children).replace(/\n$/, '').includes('\n');
-                                                                const isBlock = isMatch || hasNewLine;
-                                                                const [copied, setCopied] = useState(false);
-                                                                const codeContent = String(children).replace(/\n$/, '');
+                                                    {(() => {
+                                                        const { processedContent, thinkBlocks } = preprocessContent(msg.content);
+                                                        const parts = processedContent.split(/(__THINK_BLOCK_\d+__)/);
 
-                                                                const handleCopy = () => {
-                                                                    navigator.clipboard.writeText(codeContent);
-                                                                    setCopied(true);
-                                                                    setTimeout(() => setCopied(false), 2000);
-                                                                };
+                                                        return (
+                                                            <>
+                                                                {parts.map((part, i) => {
+                                                                    const thinkMatch = part.match(/__THINK_BLOCK_(\d+)__/);
+                                                                    if (thinkMatch) {
+                                                                        const blockIndex = parseInt(thinkMatch[1]);
+                                                                        return <ThinkBlock key={`think-${i}`}>{thinkBlocks[blockIndex]}</ThinkBlock>;
+                                                                    }
+                                                                    if (!part.trim()) return null;
+                                                                    return (
+                                                                        <ReactMarkdown
+                                                                            key={`md-${i}`}
+                                                                            remarkPlugins={[remarkGfm]}
+                                                                            components={{
+                                                                                p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                                                                                h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-3 mt-4" {...props} />,
+                                                                                h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 mt-3" {...props} />,
+                                                                                h3: ({ node, ...props }) => <h3 className="text-base font-semibold mb-2 mt-3" {...props} />,
+                                                                                ul: ({ node, ...props }) => <ul className={`list-disc mb-3 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
+                                                                                ol: ({ node, ...props }) => <ol className={`list-decimal mb-3 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
+                                                                                li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                                                                                blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-3 italic bg-white/5 rounded-r" {...props} />,
+                                                                                hr: ({ node, ...props }) => <hr className="my-6 border-t-2 border-white/20" {...props} />,
+                                                                                pre: ({ children }) => <>{children}</>,
+                                                                                table: TableBlock,
+                                                                                thead: ({ node, ...props }) => <thead className="bg-white/5 text-xs uppercase font-medium text-white/60" {...props} />,
+                                                                                tbody: ({ node, ...props }) => <tbody className="text-gray-300" {...props} />,
+                                                                                tr: ({ node, ...props }) => <tr className="" {...props} />,
+                                                                                th: ({ node, ...props }) => <th className="px-4 py-2 font-medium first:rounded-tl-md last:rounded-tr-md border-b border-white/5" {...props} />,
+                                                                                td: ({ node, ...props }) => <td className="px-4 py-2 border border-white/5 first:rounded-bl-md last:rounded-br-md" {...props} />,
+                                                                                code({ node, inline, className, children, ...props }: any) {
+                                                                                    const isMatch = /language-(\w+)/.exec(className || '');
+                                                                                    const hasNewLine = String(children).replace(/\n$/, '').includes('\n');
+                                                                                    const isBlock = isMatch || hasNewLine;
+                                                                                    const [copied, setCopied] = useState(false);
+                                                                                    const codeContent = String(children).replace(/\n$/, '');
 
-                                                                return isBlock ? (
-                                                                    <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-3 bg-black/50 text-left backdrop-blur-sm">
-                                                                        <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
-                                                                            <span>{isMatch ? isMatch[1] : 'code'}</span>
-                                                                            <button onClick={handleCopy} className="hover:text-white transition-colors">
-                                                                                {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
-                                                                            </button>
-                                                                        </div>
-                                                                        <div className="overflow-x-auto">
-                                                                            <SyntaxHighlighter
-                                                                                {...props}
-                                                                                style={oneDark}
-                                                                                language={isMatch ? isMatch[1] : 'text'}
-                                                                                PreTag="div"
-                                                                                wrapLongLines={true}
-                                                                                codeTagProps={{ style: { backgroundColor: 'transparent' } }}
-                                                                                customStyle={{ margin: 0, padding: '1rem', background: 'transparent', lineHeight: '1.5' }}
-                                                                            >
-                                                                                {codeContent}
-                                                                            </SyntaxHighlighter>
-                                                                        </div>
-                                                                    </div>
-                                                                ) : (
-                                                                    <code className="bg-white/10 px-1.5 py-0.5 rounded text-cyan-300 font-mono text-xs" {...props}>
-                                                                        {children}
-                                                                    </code>
-                                                                );
-                                                            },
-                                                        }}
-                                                    >
-                                                        {msg.content}
-                                                    </ReactMarkdown>
+                                                                                    const handleCopy = () => {
+                                                                                        navigator.clipboard.writeText(codeContent);
+                                                                                        setCopied(true);
+                                                                                        setTimeout(() => setCopied(false), 2000);
+                                                                                    };
+
+                                                                                    return isBlock ? (
+                                                                                        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-3 bg-black/50 text-left backdrop-blur-sm">
+                                                                                            <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
+                                                                                                <span>{isMatch ? isMatch[1] : 'code'}</span>
+                                                                                                <button onClick={handleCopy} className="hover:text-white transition-colors">
+                                                                                                    {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                                                                                                </button>
+                                                                                            </div>
+                                                                                            <div className="overflow-x-auto">
+                                                                                                <SyntaxHighlighter
+                                                                                                    {...props}
+                                                                                                    style={oneDark}
+                                                                                                    language={isMatch ? isMatch[1] : 'text'}
+                                                                                                    PreTag="div"
+                                                                                                    wrapLongLines={true}
+                                                                                                    codeTagProps={{ style: { backgroundColor: 'transparent' } }}
+                                                                                                    customStyle={{ margin: 0, padding: '1rem', background: 'transparent', lineHeight: '1.5' }}
+                                                                                                >
+                                                                                                    {codeContent}
+                                                                                                </SyntaxHighlighter>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <code className="bg-white/10 px-1.5 py-0.5 rounded text-cyan-300 font-mono text-xs" {...props}>
+                                                                                            {children}
+                                                                                        </code>
+                                                                                    );
+                                                                                },
+                                                                            }}
+                                                                        >
+                                                                            {part}
+                                                                        </ReactMarkdown>
+                                                                    );
+                                                                })}
+                                                            </>
+                                                        );
+                                                    })()}
                                                 </div>
                                             </div>
                                             {/* Meta and Actions */}

@@ -61,16 +61,34 @@ const ThinkBlock = ({ children }: { children: string }) => {
 };
 
 // Preprocess content to handle <think> tags
-const preprocessContent = (content: string): { processedContent: string; thinkBlocks: string[] } => {
+const preprocessContent = (content: any): { processedContent: string; thinkBlocks: string[] } => {
     const thinkBlocks: string[] = [];
-    let processedContent = content;
+
+    // Guard against undefined/null/non-string content
+    let processedContent = '';
+
+    if (typeof content === 'string') {
+        processedContent = content;
+    } else if (Array.isArray(content)) {
+        // Handle array format (e.g., from image functionality)
+        processedContent = content
+            .map(item => {
+                if (typeof item === 'string') return item;
+                if (item?.type === 'text') return item.text || '';
+                return '';
+            })
+            .join('\n');
+    } else if (content && typeof content === 'object') {
+        // Handle object format
+        processedContent = content.text || content.content || '';
+    }
 
     // Find all <think>...</think> blocks
     const thinkRegex = /<think>\s*([\s\S]*?)\s*<\/think>/g;
     let match;
     let index = 0;
 
-    while ((match = thinkRegex.exec(content)) !== null) {
+    while ((match = thinkRegex.exec(processedContent)) !== null) {
         thinkBlocks.push(match[1].trim());
         // Replace with a placeholder that we can identify later
         processedContent = processedContent.replace(match[0], `__THINK_BLOCK_${index}__`);
@@ -139,6 +157,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
         <div className="flex-1 overflow-y-auto p-4 space-y-8 custom-scrollbar">
             {messages.map((msg, index) => (
                 <div
+                    id={`message-${index}`}
                     key={index}
                     className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group`}
                 >
@@ -207,18 +226,20 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                 const { processedContent, thinkBlocks } = preprocessContent(msg.content);
                                                 const parts = processedContent.split(/(__THINK_BLOCK_\d+__)/);
 
-                                                return parts.map((part, i) => {
-                                                    const thinkMatch = part.match(/__THINK_BLOCK_(\d+)__/);
-                                                    if (thinkMatch) {
-                                                        const blockIndex = parseInt(thinkMatch[1]);
-                                                        return <ThinkBlock key={`think-${i}`}>{thinkBlocks[blockIndex]}</ThinkBlock>;
-                                                    }
-                                                    if (!part.trim()) return null;
-                                                    return (
-                                                        <ReactMarkdown
-                                                            key={`md-${i}`}
-                                                            remarkPlugins={[remarkGfm]}
-                                                            components={{
+                                                return (
+                                                    <>
+                                                        {parts.map((part, i) => {
+                                                            const thinkMatch = part.match(/__THINK_BLOCK_(\d+)__/);
+                                                            if (thinkMatch) {
+                                                                const blockIndex = parseInt(thinkMatch[1]);
+                                                                return <ThinkBlock key={`think-${i}`}>{thinkBlocks[blockIndex]}</ThinkBlock>;
+                                                            }
+                                                            if (!part.trim()) return null;
+                                                            return (
+                                                                <ReactMarkdown
+                                                                    key={`md-${i}`}
+                                                                    remarkPlugins={[remarkGfm]}
+                                                                    components={{
                                                     // Text Elements
                                                     p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
                                                     h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
@@ -286,7 +307,9 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                             {part}
                                                         </ReactMarkdown>
                                                     );
-                                                });
+                                                        })}
+                                                    </>
+                                                );
                                             })()}
                                         </div>
                                     )}
