@@ -54,7 +54,7 @@ export class LLMService {
         }
     }
 
-    static async *streamMessage(messages: Message[], model?: string): AsyncGenerator<string, void, unknown> {
+    static async *streamMessage(messages: Message[], model?: string, abortSignal?: AbortSignal): AsyncGenerator<string, void, unknown> {
         const settings = StorageService.getSettings();
         const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
         let apiKey = process.env.NEXT_PUBLIC_API_KEY || settings.apiKey;
@@ -90,23 +90,42 @@ export class LLMService {
         const modelName = model || settings.modelName || 'gpt-3.5-turbo';
         const lowerModel = modelName.toLowerCase();
 
+        // Check if thinking will be enabled (model-based or forced)
+        const isClaudeModel = lowerModel.includes('claude');
+        const isHaikuModel = lowerModel.includes('haiku');
+        const isVersion45 = lowerModel.includes('4.5') || lowerModel.includes('4-5');
+
+        // Only auto-enable thinking for specific models that support it
+        // Exclude 4.5 models (they don't support extended thinking currently)
+        const isAutoThinkingModel = (!isHaikuModel && !isVersion45 && (
+                                         lowerModel.includes('opus') && lowerModel.includes('4') ||
+                                         lowerModel.includes('sonnet') && lowerModel.includes('4') ||
+                                         lowerModel.includes('claude-3.7') ||
+                                         lowerModel.includes('claude-3-7')
+                                     )) ||
+                                     (lowerModel.includes('deepseek') && (lowerModel.includes('r1') || lowerModel.includes('reasoner'))) ||
+                                     lowerModel.includes('o1') ||
+                                     lowerModel.includes('o3');
+
+        const enableThinking = isAutoThinkingModel;
+
         // Base payload
         const payload: any = {
             messages,
             model: modelName,
             stream: true,
-            max_tokens: 4096,  // Increased from 1000 to allow longer responses
-            temperature: 0.1,
+            max_tokens: enableThinking ? 8192 : 4096,  // Higher max_tokens needed for thinking mode (must be > thinking.budget_tokens)
+            temperature: enableThinking ? 1.0 : 0.1,  // Temperature must be 1.0 for thinking models
             // Note: top_p is removed as Claude models don't support both temperature and top_p
             // presence_penalty is also removed as it's not supported by Claude models
         };
 
         // Add thinking/reasoning parameters based on model
         // Claude models: extended thinking
-        if (lowerModel.includes('claude-4') || lowerModel.includes('claude-3.7') || lowerModel.includes('claude-3-7')) {
+        if (isClaudeModel && isAutoThinkingModel) {
             payload.thinking = {
                 type: "enabled",
-                budget_tokens: 10000  // Configurable: 1024 - 128000
+                budget_tokens: 5000  // Configurable: 1024 - 128000, set to 5000 to work with all Claude models (Haiku max: 8192)
             };
         }
 
@@ -153,6 +172,11 @@ export class LLMService {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
+            // If external abort signal provided, listen to it
+            if (abortSignal) {
+                abortSignal.addEventListener('abort', () => controller.abort());
+            }
+
             response = await fetch(endpointUrl, {
                 method: 'POST',
                 credentials: 'omit',
@@ -170,10 +194,16 @@ export class LLMService {
 
             clearTimeout(timeoutId);
         } catch (e) {
-            console.error('Fetch failed:', e);
             if (e instanceof Error && e.name === 'AbortError') {
+                if (abortSignal?.aborted) {
+                    // User-initiated abort - end gracefully without error
+                    console.log('Generation stopped by user');
+                    return;
+                }
+                console.error('Fetch failed:', e);
                 throw new Error('Request timeout - please check your connection and try again');
             }
+            console.error('Fetch failed:', e);
             throw e;
         }
 
@@ -258,6 +288,13 @@ export class LLMService {
 
         try {
             while (true) {
+                // Check if abort signal was triggered
+                if (abortSignal?.aborted) {
+                    console.log('Stream aborted by user');
+                    reader.cancel();
+                    break;
+                }
+
                 const { done, value } = await reader.read();
                 if (done) {
                     console.log('Stream done');
@@ -303,9 +340,14 @@ export class LLMService {
                 }
             }
         } catch (e) {
-            console.error('Stream reading error:', e);
             // Release the reader before throwing
             reader.releaseLock();
+            if (e instanceof Error && e.name === 'AbortError') {
+                // User-initiated abort - end gracefully without error
+                console.log('Stream stopped by user');
+                return;
+            }
+            console.error('Stream reading error:', e);
             throw new Error('Stream interrupted - connection may have been lost');
         } finally {
             // Ensure reader is always released

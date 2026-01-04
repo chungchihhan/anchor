@@ -24,6 +24,7 @@ export default function Home() {
         isLoading,
         error,
         sendMessage,
+        stopGeneration,
         clearChat,
         selectedModel,
         setSelectedModel,
@@ -200,7 +201,7 @@ export default function Home() {
                                 </p>
                             </div>
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-                                <ChatInput onSend={sendMessage} disabled={isLoading} hideSendButton={true} />
+                                <ChatInput onSend={sendMessage} onStop={stopGeneration} disabled={isLoading} isLoading={isLoading} />
                             </div>
                         </div>
                     </div>
@@ -224,7 +225,7 @@ export default function Home() {
 
                             {/* Input Area with Enhanced Glass/Transparency */}
                             <div className="absolute bottom-0 left-0 right-0 p-4 pt-2 z-20">
-                                <ChatInput onSend={sendMessage} disabled={isLoading} hideSendButton={true} />
+                                <ChatInput onSend={sendMessage} onStop={stopGeneration} disabled={isLoading} isLoading={isLoading} />
                             </div>
                         </div>
                     </>

@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, KeyboardEvent, useRef, useEffect } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Square } from 'lucide-react';
 
 interface ChatInputProps {
     onSend: (content: string) => void;
+    onStop: () => void;
     disabled: boolean;
+    isLoading: boolean;
     hideSendButton?: boolean;
 }
 
-export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInputProps) {
+export function ChatInput({ onSend, onStop, disabled, isLoading, hideSendButton = false }: ChatInputProps) {
     const [input, setInput] = useState('');
     const [isMultiLine, setIsMultiLine] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -72,7 +74,10 @@ export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInpu
     return (
         <div className="p-0 bg-transparent">
             <div className={`relative max-w-4xl mx-auto flex items-end gap-2 ${hideSendButton ? 'justify-center' : ''}`}>
-                <div className={`w-full backdrop-blur-md bg-black/30 border border-white/30 shadow-2xl p-3 transition-all duration-300 ease-out hover:bg-black/40 focus-within:bg-black/50 focus-within:border-white/70 ${isMultiLine ? 'rounded-2xl' : 'rounded-[32px]'}`}>
+                <div
+                    className={`backdrop-blur-md bg-black/30 border border-white/30 shadow-2xl p-3 hover:bg-black/40 focus-within:bg-black/50 focus-within:border-white/70 ${isMultiLine ? 'rounded-2xl' : 'rounded-[32px]'} w-[calc(100%-60px)] transition-all duration-300 ease-out`}
+                    style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+                >
                     <textarea
                         ref={textareaRef}
                         value={input}
@@ -85,13 +90,25 @@ export function ChatInput({ onSend, disabled, hideSendButton = false }: ChatInpu
                     />
                 </div>
                 {!hideSendButton && (
-                    <button
-                        onClick={handleSend}
-                        disabled={!input.trim() || disabled}
-                        className="p-4 rounded-full bg-white/10 text-white/90 hover:text-white hover:bg-white/20 border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all backdrop-blur-md shadow-lg hover:shadow-blue-400/20"
-                    >
-                        <Send size={20} />
-                    </button>
+                    isLoading ? (
+                        <button
+                            onClick={onStop}
+                            className="p-4 rounded-full bg-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/30 border border-red-500/30 transition-all backdrop-blur-md shadow-lg hover:shadow-red-400/20"
+                            style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+                            title="Stop generation"
+                        >
+                            <Square size={20} fill="currentColor" />
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleSend}
+                            disabled={!input.trim()}
+                            className="p-4 rounded-full backdrop-blur-xl bg-transparent border border-white/30 text-white/90 hover:text-white hover:bg-white/20 disabled:cursor-not-allowed transition-all shadow-2xl hover:shadow-blue-400/20"
+                            title="Send message"
+                        >
+                            <Send size={20} />
+                        </button>
+                    )
                 )}
             </div>
             <div className="text-center mt-3 opacity-0 hover:opacity-100 transition-opacity duration-300">
