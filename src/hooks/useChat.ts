@@ -13,6 +13,14 @@ export function useChat() {
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
+    // Load selected model from localStorage on mount
+    useEffect(() => {
+        const savedModel = localStorage.getItem('selectedModel');
+        if (savedModel) {
+            setSelectedModel(savedModel);
+        }
+    }, []);
+
     // Fetch models on mount
     useEffect(() => {
         const fetchModels = async () => {
@@ -30,7 +38,12 @@ export function useChat() {
             }
         };
         fetchModels();
-    }, []);
+    }, [selectedModel]);
+
+    // Save selected model to localStorage
+    useEffect(() => {
+        localStorage.setItem('selectedModel', selectedModel);
+    }, [selectedModel]);
 
     const toggleModel = useCallback(() => {
         if (availableModels.length === 0) return;
