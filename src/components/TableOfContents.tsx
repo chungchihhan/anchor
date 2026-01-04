@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Message } from '@/types';
 
 interface TableOfContentsProps {
@@ -8,6 +8,8 @@ interface TableOfContentsProps {
 export function TableOfContents({ messages }: TableOfContentsProps) {
     const [isVisible, setIsVisible] = useState(false);
     const [isHoveringPanel, setIsHoveringPanel] = useState(false);
+    const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
@@ -22,6 +24,26 @@ export function TableOfContents({ messages }: TableOfContentsProps) {
         window.addEventListener('mousemove', handleMouseMove);
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, [isHoveringPanel]);
+
+    const handleMouseEnter = (index: number) => {
+        // Clear any existing timeout
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+        }
+
+        // Set timeout for 0.5 seconds
+        hoverTimeoutRef.current = setTimeout(() => {
+            setExpandedIndex(index);
+        }, 500);
+    };
+
+    const handleMouseLeave = () => {
+        // Clear timeout and collapse immediately
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+        }
+        setExpandedIndex(null);
+    };
 
     const scrollToMessage = (index: number) => {
         const element = document.getElementById(`message-${index}`);
@@ -87,12 +109,17 @@ export function TableOfContents({ messages }: TableOfContentsProps) {
                                 <button
                                     key={index}
                                     onClick={() => scrollToMessage(index)}
+                                    onMouseEnter={() => handleMouseEnter(index)}
+                                    onMouseLeave={handleMouseLeave}
                                     className={`block text-left py-2 mb-1 rounded-lg transition-all duration-500 ease-in-out hover:bg-white/10 border border-transparent hover:border-white/5 group ${
                                         msg.role === 'user' ? 'w-full bg-white/5 px-3' : 'w-[calc(100%-0.5rem)] ml-2 bg-transparent px-3'
                                     }`}
                                 >
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-[11px] text-white/80 line-clamp-2 group-hover:line-clamp-5 group-hover:text-white transition-all duration-500 ease-in-out">
+                                        <div className={`text-[11px] text-white/80 overflow-hidden transition-all duration-700 ease-in-out ${
+                                            expandedIndex === index ? 'max-h-[100px] text-white' : 'max-h-[2.6em]'
+                                        }`}
+                                        style={{ lineHeight: '1.3em' }}>
                                             {cleanContent}
                                         </div>
                                         {msg.timestamp && (
