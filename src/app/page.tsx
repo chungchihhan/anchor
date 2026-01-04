@@ -136,7 +136,7 @@ export default function Home() {
                 />
             </div>
             {/* Header */}
-            <header className="flex items-center justify-between px-6 py-4 z-10 transition-all duration-300">
+            <header className="flex items-center justify-between px-6 pb-4 pt-10 z-10 transition-all duration-300">
                 <div className="flex items-center gap-3">
                     <div className="relative group cursor-default">
                         <div className="absolute -inset-2 bg-cyan-500/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
