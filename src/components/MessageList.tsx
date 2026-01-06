@@ -32,6 +32,72 @@ const TableBlock = ({ node, className, children, ...props }: any) => {
     );
 };
 
+const ThinkBlock = ({ children }: { children: string }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    return (
+        <div className="my-3 rounded-md border border-white/10 bg-white/5 overflow-hidden">
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/60 hover:bg-white/5 transition-colors"
+            >
+                <svg
+                    className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="font-mono">Thinking...</span>
+            </button>
+            {isExpanded && (
+                <div className="px-3 py-2 text-xs text-white/50 border-t border-white/10 bg-black/20 font-mono leading-relaxed whitespace-pre-wrap">
+                    {children}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Preprocess content to handle <think> tags
+const preprocessContent = (content: any): { processedContent: string; thinkBlocks: string[] } => {
+    const thinkBlocks: string[] = [];
+
+    // Guard against undefined/null/non-string content
+    let processedContent = '';
+
+    if (typeof content === 'string') {
+        processedContent = content;
+    } else if (Array.isArray(content)) {
+        // Handle array format (e.g., from image functionality)
+        processedContent = content
+            .map(item => {
+                if (typeof item === 'string') return item;
+                if (item?.type === 'text') return item.text || '';
+                return '';
+            })
+            .join('\n');
+    } else if (content && typeof content === 'object') {
+        // Handle object format
+        processedContent = content.text || content.content || '';
+    }
+
+    // Find all <think>...</think> blocks
+    const thinkRegex = /<think>\s*([\s\S]*?)\s*<\/think>/g;
+    let match;
+    let index = 0;
+
+    while ((match = thinkRegex.exec(processedContent)) !== null) {
+        thinkBlocks.push(match[1].trim());
+        // Replace with a placeholder that we can identify later
+        processedContent = processedContent.replace(match[0], `__THINK_BLOCK_${index}__`);
+        index++;
+    }
+
+    return { processedContent, thinkBlocks };
+};
+
 export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode = 'chat' }: MessageListProps) {
     const bottomRef = useRef<HTMLDivElement>(null);
     const [msgsCopied, setMsgsCopied] = useState<number | null>(null);
@@ -91,6 +157,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
         <div className="flex-1 overflow-y-auto p-4 space-y-8 custom-scrollbar">
             {messages.map((msg, index) => (
                 <div
+                    id={`message-${index}`}
                     key={index}
                     className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group`}
                 >
@@ -155,19 +222,34 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                         </div>
                                     ) : (
                                         <div className={`leading-normal ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                                            <ReactMarkdown
-                                                remarkPlugins={[remarkGfm]}
-                                                components={{
+                                            {(() => {
+                                                const { processedContent, thinkBlocks } = preprocessContent(msg.content);
+                                                const parts = processedContent.split(/(__THINK_BLOCK_\d+__)/);
+
+                                                return (
+                                                    <>
+                                                        {parts.map((part, i) => {
+                                                            const thinkMatch = part.match(/__THINK_BLOCK_(\d+)__/);
+                                                            if (thinkMatch) {
+                                                                const blockIndex = parseInt(thinkMatch[1]);
+                                                                return <ThinkBlock key={`think-${i}`}>{thinkBlocks[blockIndex]}</ThinkBlock>;
+                                                            }
+                                                            if (!part.trim()) return null;
+                                                            return (
+                                                                <ReactMarkdown
+                                                                    key={`md-${i}`}
+                                                                    remarkPlugins={[remarkGfm]}
+                                                                    components={{
                                                     // Text Elements
                                                     p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
                                                     h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
                                                     h2: ({ node, ...props }) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
                                                     h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mb-2 mt-4" {...props} />,
-                                                    ul: ({ node, ...props }) => <ul className={`list-disc mb-4 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
-                                                    ol: ({ node, ...props }) => <ol className={`list-decimal mb-4 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
+                                                    ul: ({ node, ...props }) => <ul className={`list-disc mb-4 ${msg.role === 'user' ? 'list-inside' : 'pl-4 ml-2'}`} {...props} />,
+                                                    ol: ({ node, ...props }) => <ol className={`list-decimal mb-4 ${msg.role === 'user' ? 'list-inside' : 'pl-4 ml-2'}`} {...props} />,
                                                     li: ({ node, ...props }) => <li className="mb-1" {...props} />,
                                                     blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-4 italic bg-white/5 rounded-r" {...props} />,
-                                                    hr: ({ node, ...props }) => <hr className="my-6 border-t-2 border-white/20" {...props} />,
+                                                    hr: ({ node, ...props }) => <hr className="my-6 border-t-2 border-white/60" {...props} />,
                                                     pre: ({ children }) => <>{children}</>,
 
                                                     // Table Elements
@@ -221,9 +303,14 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                         );
                                                     }
                                                 }}
-                                            >
-                                                {msg.content}
-                                            </ReactMarkdown>
+                                                        >
+                                                            {part}
+                                                        </ReactMarkdown>
+                                                    );
+                                                        })}
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     )}
                                 </>

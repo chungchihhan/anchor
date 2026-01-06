@@ -86,16 +86,51 @@ export function getModelCapabilities(modelName: string): ModelCapabilities {
     }
 
     // Anthropic Claude models
-    if (lower.includes('claude-3-5-sonnet') || lower.includes('claude-3.5-sonnet')) {
+    // Claude 4.5 series (with extended thinking)
+    if (lower.includes('claude-4.5') || lower.includes('claude-4-5')) {
+        return {
+            thinking: true,
+            vision: true,
+            functionCalling: true,
+            contextWindow: '200K',
+            description: 'Latest Claude with extended thinking',
+            releaseDate: '2025-12'
+        };
+    }
+    // Claude 4 series (with extended thinking)
+    if (lower.includes('claude-4') && !lower.includes('claude-4.5') && !lower.includes('claude-4-5')) {
+        return {
+            thinking: true,
+            vision: true,
+            functionCalling: true,
+            contextWindow: '200K',
+            description: 'Claude 4 with extended thinking',
+            releaseDate: '2025-06'
+        };
+    }
+    // Claude 3.7 Sonnet (with extended thinking)
+    if (lower.includes('claude-3.7') || lower.includes('claude-3-7')) {
+        return {
+            thinking: true,
+            vision: true,
+            functionCalling: true,
+            contextWindow: '200K',
+            description: 'Hybrid reasoning model with extended thinking',
+            releaseDate: '2024-12'
+        };
+    }
+    // Claude 3.5 Sonnet (no extended thinking)
+    if (lower.includes('claude-3.5-sonnet') || lower.includes('claude-3-5-sonnet')) {
         return {
             thinking: false,
             vision: true,
             functionCalling: true,
             contextWindow: '200K',
-            description: 'Most intelligent Claude model',
+            description: 'Most intelligent Claude 3 model',
             releaseDate: '2024-06'
         };
     }
+    // Claude 3 Opus (no extended thinking)
     if (lower.includes('claude-3-opus')) {
         return {
             thinking: false,
@@ -106,6 +141,7 @@ export function getModelCapabilities(modelName: string): ModelCapabilities {
             releaseDate: '2024-03'
         };
     }
+    // Claude 3 Sonnet (no extended thinking)
     if (lower.includes('claude-3-sonnet')) {
         return {
             thinking: false,
@@ -116,6 +152,18 @@ export function getModelCapabilities(modelName: string): ModelCapabilities {
             releaseDate: '2024-03'
         };
     }
+    // Claude Haiku 4.5 (with extended thinking)
+    if (lower.includes('claude') && lower.includes('haiku') && (lower.includes('4.5') || lower.includes('4-5'))) {
+        return {
+            thinking: true,
+            vision: true,
+            functionCalling: true,
+            contextWindow: '200K',
+            description: 'Fast and efficient with extended thinking',
+            releaseDate: '2025-06'
+        };
+    }
+    // Claude 3 Haiku (no extended thinking)
     if (lower.includes('claude-3-haiku')) {
         return {
             thinking: false,
@@ -128,9 +176,32 @@ export function getModelCapabilities(modelName: string): ModelCapabilities {
     }
 
     // Google Gemini models
-    if (lower.includes('gemini-2.0')) {
+    // Gemini 3 Flash (with thinking mode)
+    if (lower.includes('gemini') && lower.includes('3') && lower.includes('flash')) {
         return {
-            thinking: lower.includes('thinking'),
+            thinking: true,
+            vision: true,
+            functionCalling: true,
+            contextWindow: '1M',
+            description: 'Latest Gemini with thinking mode',
+            releaseDate: '2025-03'
+        };
+    }
+    // Gemini 2.0 Flash Thinking (with thinking mode)
+    if (lower.includes('gemini') && lower.includes('2.0') && lower.includes('thinking')) {
+        return {
+            thinking: true,
+            vision: true,
+            functionCalling: true,
+            contextWindow: '1M',
+            description: 'Advanced reasoning with thinking mode',
+            releaseDate: '2025-02'
+        };
+    }
+    // Gemini 2.0 (without thinking)
+    if (lower.includes('gemini-2.0') || lower.includes('gemini-2-0')) {
+        return {
+            thinking: false,
             vision: true,
             functionCalling: true,
             contextWindow: '1M',
@@ -138,9 +209,10 @@ export function getModelCapabilities(modelName: string): ModelCapabilities {
             releaseDate: '2024-12'
         };
     }
-    if (lower.includes('gemini-1.5-pro')) {
+    // Gemini 1.5 Pro
+    if (lower.includes('gemini-1.5-pro') || lower.includes('gemini-1-5-pro')) {
         return {
-            thinking: lower.includes('thinking'),
+            thinking: false,
             vision: true,
             functionCalling: true,
             contextWindow: '2M',
@@ -148,6 +220,7 @@ export function getModelCapabilities(modelName: string): ModelCapabilities {
             releaseDate: '2024-05'
         };
     }
+    // Other Gemini models
     if (lower.includes('gemini')) {
         return {
             thinking: false,

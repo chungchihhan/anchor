@@ -11,6 +11,15 @@ export function useChat() {
     const [selectedModel, setSelectedModel] = useState<string>('gpt-3.5-turbo');
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
+
+    // Load selected model from localStorage on mount
+    useEffect(() => {
+        const savedModel = localStorage.getItem('selectedModel');
+        if (savedModel) {
+            setSelectedModel(savedModel);
+        }
+    }, []);
 
     // Fetch models on mount
     useEffect(() => {
@@ -29,7 +38,12 @@ export function useChat() {
             }
         };
         fetchModels();
-    }, []);
+    }, [selectedModel]);
+
+    // Save selected model to localStorage
+    useEffect(() => {
+        localStorage.setItem('selectedModel', selectedModel);
+    }, [selectedModel]);
 
     const toggleModel = useCallback(() => {
         if (availableModels.length === 0) return;
@@ -92,6 +106,9 @@ export function useChat() {
         setIsLoading(true);
         setError(null);
 
+        // Create abort controller for this request
+        abortControllerRef.current = new AbortController();
+
         try {
             const contextMessages = newMessages.map(({ role, content }) => ({ role, content }));
 
@@ -104,7 +121,7 @@ export function useChat() {
             }]);
 
             let fullContent = '';
-            for await (const chunk of LLMService.streamMessage(contextMessages, selectedModel)) {
+            for await (const chunk of LLMService.streamMessage(contextMessages, selectedModel, abortControllerRef.current.signal)) {
                 fullContent += chunk;
                 setMessages(prev => {
                     const updated = [...prev];
@@ -134,6 +151,7 @@ export function useChat() {
             });
         } finally {
             setIsLoading(false);
+            abortControllerRef.current = null;
         }
     };
 
@@ -226,11 +244,18 @@ export function useChat() {
         URL.revokeObjectURL(url);
     };
 
+    const stopGeneration = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+    };
+
     return {
         messages,
         isLoading,
         error,
         sendMessage,
+        stopGeneration,
         clearChat,
         availableModels,
         selectedModel,

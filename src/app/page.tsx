@@ -7,6 +7,7 @@ import { SettingsModal } from '@/components/SettingsModal';
 import { ShortcutsHelp } from '@/components/ShortcutsHelp';
 import { ModelSelector } from '@/components/ModelSelector';
 import { ChatHistoryModal } from '@/components/ChatHistoryModal';
+import { TableOfContents } from '@/components/TableOfContents';
 import LightRays from '@/components/LightRays';
 import { useChat } from '@/hooks/useChat';
 import { useShortcuts, Shortcut } from '@/hooks/useShortcuts';
@@ -24,6 +25,7 @@ export default function Home() {
         isLoading,
         error,
         sendMessage,
+        stopGeneration,
         clearChat,
         selectedModel,
         setSelectedModel,
@@ -134,7 +136,7 @@ export default function Home() {
                 />
             </div>
             {/* Header */}
-            <header className="flex items-center justify-between px-6 py-4 z-10 transition-all duration-300">
+            <header className="flex items-center justify-between px-6 pb-4 pt-10 z-10 transition-all duration-300">
                 <div className="flex items-center gap-3">
                     <div className="relative group cursor-default">
                         <div className="absolute -inset-2 bg-cyan-500/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -200,7 +202,7 @@ export default function Home() {
                                 </p>
                             </div>
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-                                <ChatInput onSend={sendMessage} disabled={isLoading} hideSendButton={true} />
+                                <ChatInput onSend={sendMessage} onStop={stopGeneration} disabled={isLoading} isLoading={isLoading} />
                             </div>
                         </div>
                     </div>
@@ -224,7 +226,7 @@ export default function Home() {
 
                             {/* Input Area with Enhanced Glass/Transparency */}
                             <div className="absolute bottom-0 left-0 right-0 p-4 pt-2 z-20">
-                                <ChatInput onSend={sendMessage} disabled={isLoading} hideSendButton={true} />
+                                <ChatInput onSend={sendMessage} onStop={stopGeneration} disabled={isLoading} isLoading={isLoading} />
                             </div>
                         </div>
                     </>
@@ -265,6 +267,9 @@ export default function Home() {
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
             />
+
+            {/* Table of Contents */}
+            <TableOfContents messages={messages} />
         </main >
     );
 }
