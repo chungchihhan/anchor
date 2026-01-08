@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -100,16 +100,115 @@ const preprocessContent = (content: any): { processedContent: string; thinkBlock
 
 export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode = 'chat' }: MessageListProps) {
     const bottomRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const [msgsCopied, setMsgsCopied] = useState<number | null>(null);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editContent, setEditContent] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const shouldAutoScrollRef = useRef(true);
+    const scrollContainerRef = useRef<HTMLElement | null>(null);
+    const isAutoScrollingRef = useRef(false);
+    const lastScrollTopRef = useRef(0);
+    const prevMessagesLengthRef = useRef(0);
+    const prevIsLoadingRef = useRef(false);
 
-    // Auto-scroll to bottom
+    // Find and set up the scroll container
     useEffect(() => {
-        if (bottomRef.current && editingIndex === null) {
-            bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+        if (!containerRef.current) return;
+
+        // The scroll container is the parent with overflow-y-auto
+        // In page.tsx it's the "absolute inset-0 overflow-y-auto" div
+        let parent = containerRef.current.parentElement;
+        while (parent) {
+            const style = window.getComputedStyle(parent);
+            if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+                scrollContainerRef.current = parent;
+                break;
+            }
+            parent = parent.parentElement;
         }
+
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        // Check initial position
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+        shouldAutoScrollRef.current = distanceFromBottom < 5;
+        lastScrollTopRef.current = scrollTop;
+
+        // Handle scroll events
+        const handleScroll = () => {
+            const { scrollTop, scrollHeight, clientHeight } = container;
+            
+            // If this is a user-initiated scroll (not auto-scroll)
+            if (!isAutoScrollingRef.current) {
+                // If user scrolled up, disable auto-scroll immediately
+                if (scrollTop < lastScrollTopRef.current) {
+                    shouldAutoScrollRef.current = false;
+                } else {
+                    // If user scrolled down, check if near bottom (more generous threshold)
+                    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+                    if (distanceFromBottom < 150) {
+                        shouldAutoScrollRef.current = true;
+                    }
+                }
+            }
+            
+            lastScrollTopRef.current = scrollTop;
+            isAutoScrollingRef.current = false;
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
+
+    // Auto-scroll on message updates
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container || editingIndex !== null) return;
+
+        // Check if there's a new user message (comparing with previous length)
+        const hasNewMessage = messages.length > prevMessagesLengthRef.current;
+        const lastMessage = messages[messages.length - 1];
+        const secondLastMessage = messages.length > 1 ? messages[messages.length - 2] : null;
+        
+        // Detect new user prompt: either last message is user, or second-to-last is user (assistant already started)
+        const newUserPrompt = hasNewMessage && (
+            lastMessage?.role === 'user' || 
+            (secondLastMessage?.role === 'user' && prevMessagesLengthRef.current < messages.length - 1)
+        );
+        
+        // Detect loading start (includes retry, regenerate, and new prompts)
+        const loadingStarted = !prevIsLoadingRef.current && isLoading;
+        
+        // Scroll to bottom function
+        const scrollToBottom = () => {
+            isAutoScrollingRef.current = true;
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (container) {
+                        container.scrollTop = container.scrollHeight;
+                        lastScrollTopRef.current = container.scrollTop;
+                    }
+                });
+            });
+        };
+        
+        // If user sent a new prompt or triggered retry/regenerate, force scroll to bottom
+        if (newUserPrompt || loadingStarted) {
+            shouldAutoScrollRef.current = true;
+            scrollToBottom();
+        } else if (shouldAutoScrollRef.current) {
+            // Normal auto-scroll for streaming responses
+            scrollToBottom();
+        }
+
+        prevMessagesLengthRef.current = messages.length;
+        prevIsLoadingRef.current = isLoading;
     }, [messages, isLoading, editingIndex]);
 
     // Auto-resize textarea
@@ -154,7 +253,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
     };
 
     return (
-        <div className="flex-1 overflow-y-auto p-4 space-y-8 custom-scrollbar">
+        <div ref={containerRef} className="p-4 space-y-8">
             {messages.map((msg, index) => (
                 <div
                     id={`message-${index}`}
