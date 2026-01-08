@@ -1,28 +1,26 @@
 use std::fs;
 use std::path::PathBuf;
+use tauri::Manager;
 
-fn get_chats_dir() -> PathBuf {
-    // In dev, we want to access the "chats" folder in the project root.
-    // We assume the app is running from src-tauri or similar, so we look up.
-    // This is a heuristic for this specific dev setup.
-    let mut path = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+fn get_chats_dir(app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
+    // Use Tauri's app data directory for production builds
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
     
-    // If we are in src-tauri, go up one level
-    if path.ends_with("src-tauri") {
-        path.pop();
+    let chats_dir = app_data_dir.join("chats");
+    
+    if !chats_dir.exists() {
+        fs::create_dir_all(&chats_dir)
+            .map_err(|e| format!("Failed to create chats directory: {}", e))?;
     }
     
-    path.push("chats");
-    
-    if !path.exists() {
-        let _ = fs::create_dir(&path);
-    }
-    
-    path
+    Ok(chats_dir)
 }
 
 #[tauri::command]
-fn save_chat(session: serde_json::Value) -> Result<String, String> {
+fn save_chat(app: tauri::AppHandle, session: serde_json::Value) -> Result<String, String> {
     let id = session["id"].as_str().unwrap_or_default().to_string();
     let id = if id.is_empty() {
         format!("chat_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis())
@@ -31,7 +29,7 @@ fn save_chat(session: serde_json::Value) -> Result<String, String> {
     };
 
     let filename = format!("{}.json", id);
-    let path = get_chats_dir().join(&filename);
+    let path = get_chats_dir(&app)?.join(&filename);
 
     // Ensure the session has the ID
     let mut session_obj = session.as_object().ok_or("Invalid session format")?.clone();
@@ -44,8 +42,8 @@ fn save_chat(session: serde_json::Value) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn list_chats() -> Result<Vec<serde_json::Value>, String> {
-    let dir = get_chats_dir();
+fn list_chats(app: tauri::AppHandle) -> Result<Vec<serde_json::Value>, String> {
+    let dir = get_chats_dir(&app)?;
     let mut sessions = Vec::new();
 
     if let Ok(entries) = fs::read_dir(dir) {
@@ -91,9 +89,9 @@ fn list_chats() -> Result<Vec<serde_json::Value>, String> {
 }
 
 #[tauri::command]
-fn load_chat(id: String) -> Result<serde_json::Value, String> {
+fn load_chat(app: tauri::AppHandle, id: String) -> Result<serde_json::Value, String> {
     let filename = format!("{}.json", id);
-    let path = get_chats_dir().join(filename);
+    let path = get_chats_dir(&app)?.join(filename);
     
     let content = fs::read_to_string(path).map_err(|_| "Chat not found".to_string())?;
     let data = serde_json::from_str(&content).map_err(|e| e.to_string())?;
@@ -102,9 +100,9 @@ fn load_chat(id: String) -> Result<serde_json::Value, String> {
 }
 
 #[tauri::command]
-fn delete_chat(id: String) -> Result<(), String> {
+fn delete_chat(app: tauri::AppHandle, id: String) -> Result<(), String> {
     let filename = format!("{}.json", id);
-    let path = get_chats_dir().join(filename);
+    let path = get_chats_dir(&app)?.join(filename);
     
     fs::remove_file(path).map_err(|e| e.to_string())?;
     Ok(())
