@@ -15,6 +15,13 @@ export function TableOfContents({ messages }: TableOfContentsProps) {
         const handleMouseMove = (e: MouseEvent) => {
             const windowWidth = window.innerWidth;
             const threshold = windowWidth - 50; // Show when within 50px of right edge
+            const topBarHeight = 200; // Exclude top bar area (adjust as needed)
+
+            // Don't show if in the top bar area
+            if (e.clientY < topBarHeight) {
+                setIsVisible(false);
+                return;
+            }
 
             // Show if near edge OR hovering over panel
             const nearEdge = e.clientX > threshold;
@@ -86,8 +93,11 @@ export function TableOfContents({ messages }: TableOfContentsProps) {
         <>
             {/* Invisible trigger area */}
             <div
-                className="fixed right-0 top-0 bottom-0 w-12 z-40 pointer-events-auto"
-                style={{ cursor: isVisible ? 'pointer' : 'default' }}
+                className="fixed right-0 bottom-0 w-12 z-40 pointer-events-auto"
+                style={{ 
+                    cursor: isVisible ? 'pointer' : 'default',
+                    top: '100px' // Start below the top bar
+                }}
             />
 
             {/* Table of Contents Panel */}

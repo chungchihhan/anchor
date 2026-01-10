@@ -11,7 +11,7 @@ import { TableOfContents } from '@/components/TableOfContents';
 import LightRays from '@/components/LightRays';
 import { useChat } from '@/hooks/useChat';
 import { useShortcuts, Shortcut } from '@/hooks/useShortcuts';
-import { Info, Download, FolderOpen } from 'lucide-react';
+import { Info, Download, MessageCircle, Command } from 'lucide-react';
 import { HistoryService } from '@/services/HistoryService';
 import { StorageService } from '@/services/StorageService';
 import { DEFAULT_SETTINGS } from '@/types';
@@ -140,34 +140,21 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                     <div className="relative group cursor-default">
                         <div className="absolute -inset-2 bg-cyan-500/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400 relative transform group-hover:scale-110 transition-transform duration-500">
-                            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" className="opacity-0 group-hover:opacity-20 transition-opacity duration-500" />
-                            <path d="M12 6V18" />
-                            <path d="M5 12H4.5C4.5 16.1421 7.85786 19.5 12 19.5C16.1421 19.5 19.5 16.1421 19.5 12H19" />
-                            <circle cx="12" cy="6" r="2" fill="currentColor" className="text-cyan-200" />
-                            <path d="M12 18L10 16" />
-                            <path d="M12 18L14 16" />
-                        </svg>
+                        <img 
+                            src="/anchor-avatar.png" 
+                            alt="Anchor" 
+                            className="w-5 h-5 relative transform group-hover:scale-110 transition-transform duration-500"
+                        />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={loadFiles}
-                            className="p-2 rounded-lg text-white/50 hover:text-white transition-colors hover:bg-white/5 mr-1"
-                            title="Open Chat"
-                        >
-                            <FolderOpen size={18} />
-                        </button>
-                        <span className="text-white font-medium text-sm tracking-wide drop-shadow-md">ANCHOR</span>
-                        <span className="text-white/20 text-xs">/</span>
-                        <button
-                            onClick={() => setIsModelSelectorOpen(true)}
-                            className="text-blue-300 text-xs font-mono uppercase tracking-wider bg-blue-900/10 px-2 py-0.5 rounded border border-blue-400/10 backdrop-blur-sm hover:bg-blue-400/20 transition-colors"
-                        >
-                            {selectedModel}
-                        </button>
-                    </div>
+                    <span className="text-white font-medium text-sm tracking-wide drop-shadow-md">ANCHOR</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setIsModelSelectorOpen(true)}
+                        className="text-blue-300 text-xs font-mono uppercase tracking-wider bg-blue-900/10 px-2 py-0.5 rounded border border-blue-400/10 backdrop-blur-sm hover:bg-blue-400/20 transition-colors"
+                    >
+                        {selectedModel}
+                    </button>
                     {messages.length > 0 && (
                         <button
                             onClick={downloadChat}
@@ -177,11 +164,20 @@ export default function Home() {
                             <Download size={18} />
                         </button>
                     )}
-                    <div className="w-px h-4 bg-white/10 mx-1" />
-                    <div className="flex items-center gap-2 text-xs text-white/30 px-2 py-1 rounded-md border border-white/5 cursor-help hover:bg-white/5 transition-colors" title="View Shortcuts">
-                        <span className="font-mono text-[10px] leading-none">^</span>
-                        <span>/</span>
-                    </div>
+                    <button
+                        onClick={loadFiles}
+                        className="p-2 rounded-lg text-white/50 hover:text-white transition-colors hover:bg-white/5"
+                        title="Open Chat"
+                    >
+                        <MessageCircle size={18} />
+                    </button>
+                    <button 
+                        onClick={() => setIsHelpOpen(true)}
+                        className="p-2 rounded-lg text-white/50 hover:text-white transition-colors hover:bg-white/5" 
+                        title="View Shortcuts"
+                    >
+                        <Command size={18} />
+                    </button>
                 </div>
             </header>
 
