@@ -210,7 +210,7 @@ export default function Home() {
                     <>
                         {/* Constrained Width Container */}
                         {/* Constrained Width Container */}
-                        <div className="flex-1 overflow-hidden flex flex-col w-full max-w-4xl mx-auto relative">
+                        <div className={`flex-1 overflow-hidden flex flex-col w-full mx-auto relative ${savedSettings.displayMode === 'columns' ? 'max-w-7xl px-8' : 'max-w-4xl'}`}>
                             {/* Scrollable Message Area */}
                             <div className="absolute inset-0 overflow-y-auto no-scrollbar scroll-smooth" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 20px, black 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20px, black 100%)' }}>
                                 <div className="min-h-full pb-32">
@@ -219,7 +219,7 @@ export default function Home() {
                                         isLoading={isLoading}
                                         onRetry={retryMessage}
                                         onEdit={editMessage}
-                                        displayMode={savedSettings.displayMode || 'chat'}
+                                        displayMode={savedSettings.displayMode || 'compact'}
                                     />
                                 </div>
                             </div>
