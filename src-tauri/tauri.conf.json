@@ -18,7 +18,8 @@
         "resizable": true,
         "fullscreen": false,
         "titleBarStyle": "Overlay",
-        "theme": "Dark"
+        "theme": "Dark",
+        "hiddenTitle": true
       }
     ],
     "security": {
