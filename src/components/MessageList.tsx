@@ -270,7 +270,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                     }, []).map((row, rowIndex) => (
                         <div key={rowIndex} className="grid grid-cols-2 gap-6 py-6 first:pt-0">
                             {/* Left Column - User Prompt */}
-                            <div className="pr-3 border-r border-white/5">
+                            <div id={`message-${row.userIndex}`} className="pr-3 border-r border-white/5">
                                 {/* User Avatar */}
                                 <div className="flex items-center gap-2 mb-3">
                                     <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
@@ -343,7 +343,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                             </div>
                             
                             {/* Right Column - Assistant Response */}
-                            <div className="pl-3">
+                            <div id={`message-${row.assistantIndex}`} className="pl-3">
                                 {/* Anchor Avatar */}
                                 <div className="flex items-center gap-2 mb-3">
                                     <img 

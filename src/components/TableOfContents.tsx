@@ -38,10 +38,10 @@ export function TableOfContents({ messages }: TableOfContentsProps) {
             clearTimeout(hoverTimeoutRef.current);
         }
 
-        // Set timeout for 0.5 seconds
+        // Set timeout for 1 seconds
         hoverTimeoutRef.current = setTimeout(() => {
             setExpandedIndex(index);
-        }, 500);
+        }, 1500);
     };
 
     const handleMouseLeave = () => {
@@ -55,7 +55,18 @@ export function TableOfContents({ messages }: TableOfContentsProps) {
     const scrollToMessage = (index: number) => {
         const element = document.getElementById(`message-${index}`);
         if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Find the scroll container (div with overflow-y-auto)
+            const scrollContainer = element.closest('.overflow-y-auto');
+            if (scrollContainer) {
+                const topOffset = 30; // Offset for top nav bar
+                const elementPosition = element.offsetTop;
+                const offsetPosition = elementPosition - topOffset;
+                
+                scrollContainer.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            }
         }
     };
 
