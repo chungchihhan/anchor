@@ -198,10 +198,8 @@ float rayStrength(vec2 raySource, vec2 rayRefDirection, vec2 coord,
   vec2 sourceToCoord = coord - raySource;
   vec2 dirNorm = normalize(sourceToCoord);
   float cosAngle = dot(dirNorm, rayRefDirection);
-
-  float distortedAngle = cosAngle + distortion * sin(iTime * 2.0 + length(sourceToCoord) * 0.01) * 0.2;
   
-  float spreadFactor = pow(max(distortedAngle, 0.0), 1.0 / max(lightSpread, 0.001));
+  float spreadFactor = pow(max(cosAngle, 0.0), 1.0 / max(lightSpread, 0.001));
 
   float distance = length(sourceToCoord);
   float maxDistance = iResolution.x * rayLength;
@@ -210,11 +208,10 @@ float rayStrength(vec2 raySource, vec2 rayRefDirection, vec2 coord,
   float fadeFalloff = clamp((iResolution.x * fadeDistance - distance) / (iResolution.x * fadeDistance), 0.5, 1.0);
   float pulse = pulsating > 0.5 ? (0.8 + 0.2 * sin(iTime * speed * 3.0)) : 1.0;
 
-  // Increased base strength for much brighter rays
   float baseStrength = clamp(
-    (0.75 + 0.25 * sin(distortedAngle * seedA + iTime * speed)) +
-    (0.6 + 0.3 * cos(-distortedAngle * seedB + iTime * speed)),
-    0.0, 1.5
+    (0.45 + 0.15 * sin(cosAngle * seedA + iTime * speed)) +
+    (0.3 + 0.2 * cos(-cosAngle * seedB + iTime * speed)),
+    0.0, 1.0
   );
 
   return baseStrength * lengthFalloff * fadeFalloff * spreadFactor * pulse;
@@ -237,8 +234,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
                rayStrength(rayPos, finalRayDir, coord, 22.3991, 18.0234,
                            1.1 * raysSpeed);
 
-  // Increased blend weights for more prominent rays
-  fragColor = rays1 * 0.9 + rays2 * 0.8;
+  fragColor = rays1 * 0.5 + rays2 * 0.4;
 
   if (noiseAmount > 0.0) {
     float n = noise(coord * 0.01 + iTime * 0.1);
@@ -249,12 +245,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float brightness = 1.0 - (coord.y / iResolution.y);
   
   // Gray to silver gradient with higher intensity
-  fragColor.x *= 0.8 + brightness * 1.2; // Red channel - much brighter
-  fragColor.y *= 0.8 + brightness * 1.2; // Green channel - much brighter
-  fragColor.z *= 0.85 + brightness * 1.25; // Blue channel - brightest for silver
+  fragColor.x *= 0.6 + brightness * 0.9; // Red channel - more intense
+  fragColor.y *= 0.6 + brightness * 0.9; // Green channel - more intense
+  fragColor.z *= 0.65 + brightness * 0.95; // Blue channel - slightly higher for silver
 
-  // Boost overall intensity significantly to make rays very visible
-  fragColor.rgb *= 4.5;
+  // Boost overall intensity to make rays more visible
+  fragColor.rgb *= 1.2;
 
   if (saturation != 1.0) {
     float gray = dot(fragColor.rgb, vec3(0.299, 0.587, 0.114));
