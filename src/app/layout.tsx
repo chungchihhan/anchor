@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Anchor',
-  description: 'LLM Focus Tool',
+  description: 'A lightweight APP that foucs on frontned integratino with API endpoints.',
 };
 
 export default function RootLayout({

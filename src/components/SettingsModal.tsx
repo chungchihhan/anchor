@@ -135,24 +135,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             <h4 className="text-sm font-medium text-white/60 uppercase tracking-wider">Display Mode</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <button
-                                    onClick={() => setSettings({ ...settings, displayMode: 'chat' })}
-                                    className={`p-4 rounded-xl border text-left transition-all ${(settings.displayMode || 'chat') === 'chat'
-                                            ? 'bg-cyan-500/20 border-cyan-400/50 text-white'
-                                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
-                                        }`}
-                                >
-                                    <div className="font-medium mb-1">Chat Mode</div>
-                                    <div className="text-xs opacity-60">Standard bubbles & avatars</div>
-                                </button>
-                                <button
                                     onClick={() => setSettings({ ...settings, displayMode: 'compact' })}
-                                    className={`p-4 rounded-xl border text-left transition-all ${settings.displayMode === 'compact'
+                                    className={`p-4 rounded-xl border text-left transition-all ${(settings.displayMode || 'compact') === 'compact'
                                             ? 'bg-cyan-500/20 border-cyan-400/50 text-white'
                                             : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
                                         }`}
                                 >
                                     <div className="font-medium mb-1">Compact Mode</div>
-                                    <div className="text-xs opacity-60">Text-focused, no avatars</div>
+                                    <div className="text-xs opacity-60">Left-aligned with avatars</div>
+                                </button>
+                                <button
+                                    onClick={() => setSettings({ ...settings, displayMode: 'columns' })}
+                                    className={`p-4 rounded-xl border text-left transition-all ${settings.displayMode === 'columns'
+                                            ? 'bg-cyan-500/20 border-cyan-400/50 text-white'
+                                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                                        }`}
+                                >
+                                    <div className="font-medium mb-1">Two-Column Mode</div>
+                                    <div className="text-xs opacity-60">Prompts left, responses right</div>
                                 </button>
                             </div>
                         </div>

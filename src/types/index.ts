@@ -43,14 +43,14 @@ export interface AppSettings {
   endpointUrl: string;
   modelName: string;
   shortcuts: ShortcutMap;
-  displayMode: 'chat' | 'compact';
+  displayMode: 'compact' | 'columns';
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   apiKey: '',
   endpointUrl: 'https://portal.rdsec.trendmicro.com/aiendpoint/v1/chat/completions',
   modelName: 'gpt-3.5-turbo',
-  displayMode: 'chat',
+  displayMode: 'compact',
   shortcuts: {
     'newChat': 'Control+N',
     'toggleModel': 'Control+M',
