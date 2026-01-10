@@ -15,6 +15,13 @@ export function TableOfContents({ messages }: TableOfContentsProps) {
         const handleMouseMove = (e: MouseEvent) => {
             const windowWidth = window.innerWidth;
             const threshold = windowWidth - 50; // Show when within 50px of right edge
+            const topBarHeight = 200; // Exclude top bar area (adjust as needed)
+
+            // Don't show if in the top bar area
+            if (e.clientY < topBarHeight) {
+                setIsVisible(false);
+                return;
+            }
 
             // Show if near edge OR hovering over panel
             const nearEdge = e.clientX > threshold;
@@ -31,10 +38,10 @@ export function TableOfContents({ messages }: TableOfContentsProps) {
             clearTimeout(hoverTimeoutRef.current);
         }
 
-        // Set timeout for 0.5 seconds
+        // Set timeout for 1 seconds
         hoverTimeoutRef.current = setTimeout(() => {
             setExpandedIndex(index);
-        }, 500);
+        }, 1500);
     };
 
     const handleMouseLeave = () => {
@@ -48,7 +55,18 @@ export function TableOfContents({ messages }: TableOfContentsProps) {
     const scrollToMessage = (index: number) => {
         const element = document.getElementById(`message-${index}`);
         if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Find the scroll container (div with overflow-y-auto)
+            const scrollContainer = element.closest('.overflow-y-auto');
+            if (scrollContainer) {
+                const topOffset = 30; // Offset for top nav bar
+                const elementPosition = element.offsetTop;
+                const offsetPosition = elementPosition - topOffset;
+                
+                scrollContainer.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            }
         }
     };
 
@@ -86,8 +104,11 @@ export function TableOfContents({ messages }: TableOfContentsProps) {
         <>
             {/* Invisible trigger area */}
             <div
-                className="fixed right-0 top-0 bottom-0 w-12 z-40 pointer-events-auto"
-                style={{ cursor: isVisible ? 'pointer' : 'default' }}
+                className="fixed right-0 bottom-0 w-12 z-40 pointer-events-auto"
+                style={{ 
+                    cursor: isVisible ? 'pointer' : 'default',
+                    top: '100px' // Start below the top bar
+                }}
             />
 
             {/* Table of Contents Panel */}
