@@ -107,52 +107,55 @@ export default function Home() {
 
     const shortcuts: Shortcut[] = useMemo(() => [
         {
-            key: currentShortcuts.help || 'Control+/',
+            key: currentShortcuts.help || DEFAULT_SETTINGS.shortcuts.help,
             description: 'Toggle Help',
             action: () => setIsHelpOpen(prev => !prev),
             group: 'General'
         },
         {
-            key: 'Escape',
-            description: 'Close Modal',
-            action: () => {
-                if (isHelpOpen) setIsHelpOpen(false);
-                if (isSettingsOpen) setIsSettingsOpen(false);
-                if (isModelSelectorOpen) setIsModelSelectorOpen(false);
-            },
+            key: currentShortcuts.settings || DEFAULT_SETTINGS.shortcuts.settings,
+            description: 'Settings',
+            action: () => setIsSettingsOpen(true),
             group: 'General'
         },
         {
-            key: currentShortcuts.toggleModel,
+            key: currentShortcuts.toggleModel || DEFAULT_SETTINGS.shortcuts.toggleModel,
             description: 'Select Model',
-            action: () => setIsModelSelectorOpen(true), // Open selector instead of toggle
+            action: () => setIsModelSelectorOpen(true),
             group: 'Chat'
         },
         {
-            key: currentShortcuts.newChat,
+            key: currentShortcuts.newChat || DEFAULT_SETTINGS.shortcuts.newChat,
             description: 'New Chat',
             action: clearChat,
             group: 'Chat'
         },
         {
-            key: currentShortcuts.saveChat,
+            key: currentShortcuts.saveChat || DEFAULT_SETTINGS.shortcuts.saveChat,
             description: 'Export Chat',
             action: downloadChat,
             group: 'Data'
         },
         {
-            key: currentShortcuts.openChat,
+            key: currentShortcuts.openChat || DEFAULT_SETTINGS.shortcuts.openChat,
             description: 'Open Chat',
             action: loadFiles,
             group: 'Data'
-        },
-        {
-            key: currentShortcuts.settings || 'Control+,',
-            description: 'Settings',
-            action: () => setIsSettingsOpen(true),
-            group: 'General'
         }
-    ], [clearChat, downloadChat, loadFiles, currentShortcuts, isHelpOpen, isSettingsOpen, isModelSelectorOpen]);
+    ], [clearChat, downloadChat, loadFiles, currentShortcuts]);
+
+    // Handle Escape key for closing modals
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (isHelpOpen) setIsHelpOpen(false);
+                else if (isSettingsOpen) setIsSettingsOpen(false);
+                else if (isModelSelectorOpen) setIsModelSelectorOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [isHelpOpen, isSettingsOpen, isModelSelectorOpen]);
 
     useShortcuts(shortcuts);
 
