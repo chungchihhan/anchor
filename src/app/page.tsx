@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { ChatInput } from '@/components/ChatInput';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { ChatInput, ChatInputRef } from '@/components/ChatInput';
 import { MessageList } from '@/components/MessageList';
 import { SettingsModal } from '@/components/SettingsModal';
 import { ShortcutsHelp } from '@/components/ShortcutsHelp';
@@ -22,6 +22,7 @@ export default function Home() {
     const [displayedText, setDisplayedText] = useState('');
     const [phraseIndex, setPhraseIndex] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
+    const chatInputRef = useRef<ChatInputRef>(null);
 
     const phrases = [
         "What's on your mind?",
@@ -127,7 +128,10 @@ export default function Home() {
         {
             key: currentShortcuts.newChat || DEFAULT_SETTINGS.shortcuts.newChat,
             description: 'New Chat',
-            action: clearChat,
+            action: () => {
+                clearChat();
+                setTimeout(() => chatInputRef.current?.focus(), 100);
+            },
             group: 'Chat'
         },
         {
@@ -156,6 +160,23 @@ export default function Home() {
         window.addEventListener('keydown', handleEscape);
         return () => window.removeEventListener('keydown', handleEscape);
     }, [isHelpOpen, isSettingsOpen, isModelSelectorOpen]);
+
+    // Handle / key to focus input
+    useEffect(() => {
+        const handleSlashKey = (e: KeyboardEvent) => {
+            // Only trigger if not in an input/textarea and no modals are open
+            if (e.key === '/' && 
+                document.activeElement?.tagName !== 'INPUT' && 
+                document.activeElement?.tagName !== 'TEXTAREA' &&
+                !isHelpOpen && !isSettingsOpen && !isModelSelectorOpen && !isLoadModalOpen
+            ) {
+                e.preventDefault();
+                chatInputRef.current?.focus();
+            }
+        };
+        window.addEventListener('keydown', handleSlashKey);
+        return () => window.removeEventListener('keydown', handleSlashKey);
+    }, [isHelpOpen, isSettingsOpen, isModelSelectorOpen, isLoadModalOpen]);
 
     useShortcuts(shortcuts);
 
@@ -234,7 +255,7 @@ export default function Home() {
                                 </p>
                             </div>
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-                                <ChatInput onSend={sendMessage} onStop={stopGeneration} disabled={isLoading} isLoading={isLoading} />
+                                <ChatInput ref={chatInputRef} onSend={sendMessage} onStop={stopGeneration} disabled={isLoading} isLoading={isLoading} />
                             </div>
                         </div>
                     </div>
@@ -258,7 +279,7 @@ export default function Home() {
 
                             {/* Input Area with Enhanced Glass/Transparency */}
                             <div className="absolute bottom-0 left-0 right-0 p-4 pt-2 z-20">
-                                <ChatInput onSend={sendMessage} onStop={stopGeneration} disabled={isLoading} isLoading={isLoading} />
+                                <ChatInput ref={chatInputRef} onSend={sendMessage} onStop={stopGeneration} disabled={isLoading} isLoading={isLoading} />
                             </div>
                         </div>
                     </>

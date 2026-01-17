@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, KeyboardEvent, useRef, useEffect } from 'react';
+import { useState, KeyboardEvent, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Send, Square } from 'lucide-react';
 
 interface ChatInputProps {
@@ -11,10 +11,21 @@ interface ChatInputProps {
     hideSendButton?: boolean;
 }
 
-export function ChatInput({ onSend, onStop, disabled, isLoading, hideSendButton = false }: ChatInputProps) {
+export interface ChatInputRef {
+    focus: () => void;
+}
+
+export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
+    function ChatInput({ onSend, onStop, disabled, isLoading, hideSendButton = false }, ref) {
     const [input, setInput] = useState('');
     const [isMultiLine, setIsMultiLine] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    useImperativeHandle(ref, () => ({
+        focus: () => {
+            textareaRef.current?.focus();
+        }
+    }));
 
     const handleSend = () => {
         if (input.trim() && !disabled) {
@@ -118,4 +129,4 @@ export function ChatInput({ onSend, onStop, disabled, isLoading, hideSendButton 
             </div>
         </div>
     );
-}
+});
