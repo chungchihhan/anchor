@@ -12,6 +12,8 @@ interface MessageListProps {
     onRetry?: (index: number) => void;
     onEdit?: (index: number, newContent: string) => void;
     displayMode?: 'compact' | 'columns';
+    selectedMessageIndex?: number | null;
+    shouldShake?: boolean;
 }
 
 const TableBlock = ({ node, className, children, ...props }: any) => {
@@ -98,7 +100,7 @@ const preprocessContent = (content: any): { processedContent: string; thinkBlock
     return { processedContent, thinkBlocks };
 };
 
-export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode = 'compact' }: MessageListProps) {
+export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode = 'compact', selectedMessageIndex = null, shouldShake = false }: MessageListProps) {
     const bottomRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [msgsCopied, setMsgsCopied] = useState<number | null>(null);
@@ -111,6 +113,28 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
     const lastScrollTopRef = useRef(0);
     const prevMessagesLengthRef = useRef(0);
     const prevIsLoadingRef = useRef(false);
+    const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+    // Scroll to selected message
+    useEffect(() => {
+        if (selectedMessageIndex !== null && messageRefs.current[selectedMessageIndex]) {
+            const element = messageRefs.current[selectedMessageIndex];
+            if (element) {
+                // Find the scroll container (div with overflow-y-auto)
+                const scrollContainer = element.closest('.overflow-y-auto');
+                if (scrollContainer) {
+                    const topOffset = 30; // Offset for top spacing
+                    const elementPosition = element.offsetTop;
+                    const offsetPosition = elementPosition - topOffset;
+                    
+                    scrollContainer.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        }
+    }, [selectedMessageIndex]);
 
     // Find and set up the scroll container
     useEffect(() => {
@@ -268,7 +292,21 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                         }
                         return rows;
                     }, []).map((row, rowIndex) => (
-                        <div key={rowIndex} className="grid grid-cols-2 gap-6 py-6 first:pt-0">
+                        <div 
+                            key={rowIndex} 
+                            ref={(el) => { 
+                                messageRefs.current[row.userIndex] = el;
+                                if (row.assistantIndex >= 0) {
+                                    messageRefs.current[row.assistantIndex] = el;
+                                }
+                            }}
+                            className="grid grid-cols-2 gap-6 py-6 first:pt-0 transition-all"
+                            style={{
+                                animation: ((selectedMessageIndex === row.userIndex || selectedMessageIndex === row.assistantIndex) && shouldShake)
+                                    ? 'shake 0.5s ease-in-out'
+                                    : 'none'
+                            }}
+                        >
                             {/* Left Column - User Prompt */}
                             <div id={`message-${row.userIndex}`} className="pr-3 border-r border-white/5">
                                 {/* User Avatar */}
@@ -383,10 +421,10 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                                             key={`md-${i}`}
                                                                             remarkPlugins={[remarkGfm]}
                                                                             components={{
-                                                                                p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                                                                                h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-4 mt-4" {...props} />,
-                                                                                h2: ({ node, ...props }) => <h2 className="text-xl font-bold mb-3 mt-3" {...props} />,
-                                                                                h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mb-2 mt-2" {...props} />,
+                                                                                p: ({ node, ...props }) => <p className="my-2" {...props} />,
+                                                                                h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-3" {...props} />,
+                                                                                h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3" {...props} />,
+                                                                                h3: ({ node, ...props }) => <h3 className="text-lg font-semibold my-3" {...props} />,
                                                                                 ul: ({ node, ...props }) => <ul className="list-disc pl-4 ml-2 mb-4" {...props} />,
                                                                                 ol: ({ node, ...props }) => <ol className="list-decimal pl-4 ml-2 mb-4" {...props} />,
                                                                                 li: ({ node, ...props }) => <li className="mb-1" {...props} />,
@@ -500,7 +538,11 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                     <div
                         id={`message-${index}`}
                         key={index}
-                        className="flex flex-col group"
+                        ref={(el) => { messageRefs.current[index] = el; }}
+                        className="flex flex-col group transition-all"
+                        style={{
+                            animation: (selectedMessageIndex === index && shouldShake) ? 'shake 0.5s ease-in-out' : 'none'
+                        }}
                     >
                         {/* Avatar and name on top */}
                         <div className="flex items-center gap-2 mb-2">
@@ -579,13 +621,13 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                                         key={`md-${i}`}
                                                                         remarkPlugins={[remarkGfm]}
                                                                         components={{
-                                                    p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                                                    h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
-                                                    h2: ({ node, ...props }) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
-                                                    h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mb-2 mt-4" {...props} />,
-                                                    ul: ({ node, ...props }) => <ul className="list-disc pl-4 ml-2 mb-4" {...props} />,
-                                                    ol: ({ node, ...props }) => <ol className="list-decimal pl-4 ml-2 mb-4" {...props} />,
-                                                    li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                                                    p: ({ node, ...props }) => <p className="my-2" {...props} />,
+                                                    h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-3" {...props} />,
+                                                    h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3" {...props} />,
+                                                    h3: ({ node, ...props }) => <h3 className="text-lg font-semibold my-3" {...props} />,
+                                                    ul: ({ node, ...props }) => <ul className="list-disc pl-4 ml-2 my-3" {...props} />,
+                                                    ol: ({ node, ...props }) => <ol className="list-decimal pl-4 ml-2 my-3" {...props} />,
+                                                    li: ({ node, ...props }) => <li className="my-1" {...props} />,
                                                     blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-4 italic bg-white/5 rounded-r" {...props} />,
                                                     hr: ({ node, ...props }) => <hr className="my-6 border-t-2 border-white/60" {...props} />,
                                                     pre: ({ children }) => <>{children}</>,

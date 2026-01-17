@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { ChatInput } from '@/components/ChatInput';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { ChatInput, ChatInputRef } from '@/components/ChatInput';
 import { MessageList } from '@/components/MessageList';
 import { SettingsModal } from '@/components/SettingsModal';
 import { ShortcutsHelp } from '@/components/ShortcutsHelp';
@@ -22,6 +22,9 @@ export default function Home() {
     const [displayedText, setDisplayedText] = useState('');
     const [phraseIndex, setPhraseIndex] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
+    const chatInputRef = useRef<ChatInputRef>(null);
+    const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | null>(null);
+    const [shouldShake, setShouldShake] = useState(false);
 
     const phrases = [
         "What's on your mind?",
@@ -104,55 +107,176 @@ export default function Home() {
     const savedSettings = useMemo(() => StorageService.getSettings(), [isSettingsOpen]); // Re-read when settings close
     const currentShortcuts = savedSettings.shortcuts || DEFAULT_SETTINGS.shortcuts;
     const [isHelpOpen, setIsHelpOpen] = useState(false);
+    const displayModeRef = useRef(savedSettings.displayMode || 'compact');
+    
+    // Update ref when display mode changes
+    useEffect(() => {
+        displayModeRef.current = savedSettings.displayMode || 'compact';
+    }, [savedSettings.displayMode]);
 
     const shortcuts: Shortcut[] = useMemo(() => [
         {
-            key: currentShortcuts.help || 'Control+/',
+            key: currentShortcuts.help || DEFAULT_SETTINGS.shortcuts.help,
             description: 'Toggle Help',
             action: () => setIsHelpOpen(prev => !prev),
             group: 'General'
         },
         {
-            key: 'Escape',
-            description: 'Close Modal',
-            action: () => {
-                if (isHelpOpen) setIsHelpOpen(false);
-                if (isSettingsOpen) setIsSettingsOpen(false);
-                if (isModelSelectorOpen) setIsModelSelectorOpen(false);
-            },
+            key: currentShortcuts.settings || DEFAULT_SETTINGS.shortcuts.settings,
+            description: 'Settings',
+            action: () => setIsSettingsOpen(true),
             group: 'General'
         },
         {
-            key: currentShortcuts.toggleModel,
+            key: currentShortcuts.toggleModel || DEFAULT_SETTINGS.shortcuts.toggleModel,
             description: 'Select Model',
-            action: () => setIsModelSelectorOpen(true), // Open selector instead of toggle
+            action: () => setIsModelSelectorOpen(true),
             group: 'Chat'
         },
         {
-            key: currentShortcuts.newChat,
+            key: currentShortcuts.newChat || DEFAULT_SETTINGS.shortcuts.newChat,
             description: 'New Chat',
-            action: clearChat,
+            action: () => {
+                clearChat();
+                setTimeout(() => chatInputRef.current?.focus(), 100);
+            },
             group: 'Chat'
         },
         {
-            key: currentShortcuts.saveChat,
+            key: currentShortcuts.saveChat || DEFAULT_SETTINGS.shortcuts.saveChat,
             description: 'Export Chat',
             action: downloadChat,
             group: 'Data'
         },
         {
-            key: currentShortcuts.openChat,
+            key: currentShortcuts.openChat || DEFAULT_SETTINGS.shortcuts.openChat,
             description: 'Open Chat',
             action: loadFiles,
             group: 'Data'
-        },
-        {
-            key: currentShortcuts.settings || 'Control+,',
-            description: 'Settings',
-            action: () => setIsSettingsOpen(true),
-            group: 'General'
         }
-    ], [clearChat, downloadChat, loadFiles, currentShortcuts, isHelpOpen, isSettingsOpen, isModelSelectorOpen]);
+    ], [clearChat, downloadChat, loadFiles, currentShortcuts]);
+
+    // Handle Escape key for closing modals
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (isHelpOpen) setIsHelpOpen(false);
+                else if (isSettingsOpen) setIsSettingsOpen(false);
+                else if (isModelSelectorOpen) setIsModelSelectorOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [isHelpOpen, isSettingsOpen, isModelSelectorOpen]);
+
+    // Handle / key to focus input
+    useEffect(() => {
+        const handleSlashKey = (e: KeyboardEvent) => {
+            // Only trigger if not in an input/textarea and no modals are open
+            if (e.key === '/' && 
+                document.activeElement?.tagName !== 'INPUT' && 
+                document.activeElement?.tagName !== 'TEXTAREA' &&
+                !isHelpOpen && !isSettingsOpen && !isModelSelectorOpen && !isLoadModalOpen
+            ) {
+                e.preventDefault();
+                chatInputRef.current?.focus();
+            }
+        };
+        window.addEventListener('keydown', handleSlashKey);
+        return () => window.removeEventListener('keydown', handleSlashKey);
+    }, [isHelpOpen, isSettingsOpen, isModelSelectorOpen, isLoadModalOpen]);
+
+    // Handle Shift+Up/Down to navigate through messages
+    useEffect(() => {
+        const handleMessageNavigation = (e: KeyboardEvent) => {
+            if (e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                e.preventDefault();
+                
+                if (messages.length === 0) return;
+                
+                const isColumnsMode = displayModeRef.current === 'columns';
+                
+                if (e.key === 'ArrowUp') {
+                    // Navigate to previous message
+                    if (selectedMessageIndex === null) {
+                        // Start from the last message when no selection
+                        if (isColumnsMode) {
+                            // Find the last user message
+                            let lastUserIndex = messages.length - 1;
+                            while (lastUserIndex >= 0 && messages[lastUserIndex].role !== 'user') {
+                                lastUserIndex--;
+                            }
+                            if (lastUserIndex >= 0) {
+                                setSelectedMessageIndex(lastUserIndex);
+                            }
+                        } else {
+                            setSelectedMessageIndex(messages.length - 1);
+                        }
+                        return;
+                    }
+                    
+                    if (selectedMessageIndex === 0) {
+                        // At the top, shake current message
+                        setShouldShake(true);
+                        setTimeout(() => setShouldShake(false), 500);
+                        return;
+                    }
+                    
+                    if (isColumnsMode) {
+                        // In columns mode, navigate by rows (user messages)
+                        // Find the previous user message
+                        let prevUserIndex = selectedMessageIndex - 1;
+                        while (prevUserIndex >= 0 && messages[prevUserIndex].role !== 'user') {
+                            prevUserIndex--;
+                        }
+                        if (prevUserIndex >= 0) {
+                            setSelectedMessageIndex(prevUserIndex);
+                        } else {
+                            // No more user messages above, shake
+                            setShouldShake(true);
+                            setTimeout(() => setShouldShake(false), 500);
+                        }
+                    } else {
+                        // In compact mode, navigate to previous message
+                        setSelectedMessageIndex(selectedMessageIndex - 1);
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    // Navigate to next message
+                    if (selectedMessageIndex === null) {
+                        setSelectedMessageIndex(0);
+                        return;
+                    }
+                    
+                    if (isColumnsMode) {
+                        // In columns mode, navigate by rows (user messages)
+                        // Find the next user message
+                        let nextUserIndex = selectedMessageIndex + 1;
+                        while (nextUserIndex < messages.length && messages[nextUserIndex].role !== 'user') {
+                            nextUserIndex++;
+                        }
+                        if (nextUserIndex < messages.length) {
+                            setSelectedMessageIndex(nextUserIndex);
+                        } else {
+                            // No more user messages below, shake
+                            setShouldShake(true);
+                            setTimeout(() => setShouldShake(false), 500);
+                        }
+                    } else {
+                        // In compact mode, navigate to next message
+                        if (selectedMessageIndex < messages.length - 1) {
+                            setSelectedMessageIndex(selectedMessageIndex + 1);
+                        } else {
+                            // At the bottom, shake current message
+                            setShouldShake(true);
+                            setTimeout(() => setShouldShake(false), 500);
+                        }
+                    }
+                }
+            }
+        };
+        window.addEventListener('keydown', handleMessageNavigation);
+        return () => window.removeEventListener('keydown', handleMessageNavigation);
+    }, [messages, selectedMessageIndex]);
 
     useShortcuts(shortcuts);
 
@@ -231,7 +355,7 @@ export default function Home() {
                                 </p>
                             </div>
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-                                <ChatInput onSend={sendMessage} onStop={stopGeneration} disabled={isLoading} isLoading={isLoading} />
+                                <ChatInput ref={chatInputRef} onSend={sendMessage} onStop={stopGeneration} disabled={isLoading} isLoading={isLoading} />
                             </div>
                         </div>
                     </div>
@@ -249,13 +373,15 @@ export default function Home() {
                                         onRetry={retryMessage}
                                         onEdit={editMessage}
                                         displayMode={savedSettings.displayMode || 'compact'}
+                                        selectedMessageIndex={selectedMessageIndex}
+                                        shouldShake={shouldShake}
                                     />
                                 </div>
                             </div>
 
                             {/* Input Area with Enhanced Glass/Transparency */}
                             <div className="absolute bottom-0 left-0 right-0 p-4 pt-2 z-20">
-                                <ChatInput onSend={sendMessage} onStop={stopGeneration} disabled={isLoading} isLoading={isLoading} />
+                                <ChatInput ref={chatInputRef} onSend={sendMessage} onStop={stopGeneration} disabled={isLoading} isLoading={isLoading} />
                             </div>
                         </div>
                     </>

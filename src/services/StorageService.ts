@@ -16,20 +16,37 @@ export class StorageService {
         try {
             const parsed = JSON.parse(stored);
             
-            // Migration: Fix legacy Help shortcut (Meta+/ -> Control+/) and Option -> Control
-            if (parsed.shortcuts) {
-                // Specific fix for old meta setting if it exists
-                if (parsed.shortcuts.help === 'Meta+/') {
-                    parsed.shortcuts.help = 'Control+/';
-                }
-
-                // General migration: Option -> Control
-                Object.keys(parsed.shortcuts).forEach(key => {
-                    if (parsed.shortcuts[key].includes('Option+')) {
-                        parsed.shortcuts[key] = parsed.shortcuts[key].replace('Option+', 'Control+');
+            // Validate and clean shortcuts object
+            if (!parsed.shortcuts || typeof parsed.shortcuts !== 'object' || Array.isArray(parsed.shortcuts)) {
+                parsed.shortcuts = DEFAULT_SETTINGS.shortcuts;
+            } else {
+                // Clean up invalid shortcuts
+                const validShortcuts: any = {};
+                for (const [key, value] of Object.entries(parsed.shortcuts)) {
+                    if (typeof value === 'string') {
+                        validShortcuts[key] = value;
                     }
-                });
+                }
+                parsed.shortcuts = validShortcuts;
             }
+            
+            // Migration: Fix legacy shortcuts (Control/Meta -> Cmd)
+            const migratedShortcuts: any = {};
+            for (const [key, shortcut] of Object.entries(parsed.shortcuts)) {
+                if (typeof shortcut !== 'string') continue;
+                
+                let updatedShortcut = shortcut;
+                // Convert Control to Cmd
+                updatedShortcut = updatedShortcut.replace(/Control\+/g, 'Cmd+');
+                // Convert Meta to Cmd
+                updatedShortcut = updatedShortcut.replace(/Meta\+/g, 'Cmd+');
+                // Convert Option to Cmd if it was used as a modifier
+                if (updatedShortcut.includes('Option+') && !updatedShortcut.includes('Cmd+')) {
+                    updatedShortcut = updatedShortcut.replace(/Option\+/g, 'Cmd+');
+                }
+                migratedShortcuts[key] = updatedShortcut;
+            }
+            parsed.shortcuts = migratedShortcuts;
             
             return { ...DEFAULT_SETTINGS, ...parsed };
         } catch (e) {

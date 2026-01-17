@@ -15,7 +15,7 @@ export function useShortcuts(shortcuts: Shortcut[]) {
             shortcuts.forEach(shortcut => {
                 const keys = shortcut.key.toLowerCase().split('+').map(k => k.trim());
                 const mainKey = keys[keys.length - 1];
-                const needsMeta = keys.includes('cmd') || keys.includes('meta');
+                const needsMeta = keys.includes('cmd') || keys.includes('meta') || keys.includes('command');
                 const needsCtrl = keys.includes('ctrl') || keys.includes('control');
                 const needsShift = keys.includes('shift');
                 const needsAlt = keys.includes('alt') || keys.includes('option');

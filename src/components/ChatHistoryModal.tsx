@@ -318,10 +318,10 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                                                             key={`md-${i}`}
                                                                             remarkPlugins={[remarkGfm]}
                                                                             components={{
-                                                                                p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                                                                                h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-3 mt-4" {...props} />,
-                                                                                h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 mt-3" {...props} />,
-                                                                                h3: ({ node, ...props }) => <h3 className="text-base font-semibold mb-2 mt-3" {...props} />,
+                                                                                p: ({ node, ...props }) => <p className="my-2" {...props} />,
+                                                                                h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-3" {...props} />,
+                                                                                h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3" {...props} />,
+                                                                                h3: ({ node, ...props }) => <h3 className="text-lg font-semibold my-3" {...props} />,
                                                                                 ul: ({ node, ...props }) => <ul className={`list-disc mb-3 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
                                                                                 ol: ({ node, ...props }) => <ol className={`list-decimal mb-3 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
                                                                                 li: ({ node, ...props }) => <li className="mb-1" {...props} />,
