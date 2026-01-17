@@ -23,6 +23,8 @@ export default function Home() {
     const [phraseIndex, setPhraseIndex] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
     const chatInputRef = useRef<ChatInputRef>(null);
+    const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | null>(null);
+    const [shouldShake, setShouldShake] = useState(false);
 
     const phrases = [
         "What's on your mind?",
@@ -105,6 +107,12 @@ export default function Home() {
     const savedSettings = useMemo(() => StorageService.getSettings(), [isSettingsOpen]); // Re-read when settings close
     const currentShortcuts = savedSettings.shortcuts || DEFAULT_SETTINGS.shortcuts;
     const [isHelpOpen, setIsHelpOpen] = useState(false);
+    const displayModeRef = useRef(savedSettings.displayMode || 'compact');
+    
+    // Update ref when display mode changes
+    useEffect(() => {
+        displayModeRef.current = savedSettings.displayMode || 'compact';
+    }, [savedSettings.displayMode]);
 
     const shortcuts: Shortcut[] = useMemo(() => [
         {
@@ -177,6 +185,98 @@ export default function Home() {
         window.addEventListener('keydown', handleSlashKey);
         return () => window.removeEventListener('keydown', handleSlashKey);
     }, [isHelpOpen, isSettingsOpen, isModelSelectorOpen, isLoadModalOpen]);
+
+    // Handle Shift+Up/Down to navigate through messages
+    useEffect(() => {
+        const handleMessageNavigation = (e: KeyboardEvent) => {
+            if (e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                e.preventDefault();
+                
+                if (messages.length === 0) return;
+                
+                const isColumnsMode = displayModeRef.current === 'columns';
+                
+                if (e.key === 'ArrowUp') {
+                    // Navigate to previous message
+                    if (selectedMessageIndex === null) {
+                        // Start from the last message when no selection
+                        if (isColumnsMode) {
+                            // Find the last user message
+                            let lastUserIndex = messages.length - 1;
+                            while (lastUserIndex >= 0 && messages[lastUserIndex].role !== 'user') {
+                                lastUserIndex--;
+                            }
+                            if (lastUserIndex >= 0) {
+                                setSelectedMessageIndex(lastUserIndex);
+                            }
+                        } else {
+                            setSelectedMessageIndex(messages.length - 1);
+                        }
+                        return;
+                    }
+                    
+                    if (selectedMessageIndex === 0) {
+                        // At the top, shake current message
+                        setShouldShake(true);
+                        setTimeout(() => setShouldShake(false), 500);
+                        return;
+                    }
+                    
+                    if (isColumnsMode) {
+                        // In columns mode, navigate by rows (user messages)
+                        // Find the previous user message
+                        let prevUserIndex = selectedMessageIndex - 1;
+                        while (prevUserIndex >= 0 && messages[prevUserIndex].role !== 'user') {
+                            prevUserIndex--;
+                        }
+                        if (prevUserIndex >= 0) {
+                            setSelectedMessageIndex(prevUserIndex);
+                        } else {
+                            // No more user messages above, shake
+                            setShouldShake(true);
+                            setTimeout(() => setShouldShake(false), 500);
+                        }
+                    } else {
+                        // In compact mode, navigate to previous message
+                        setSelectedMessageIndex(selectedMessageIndex - 1);
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    // Navigate to next message
+                    if (selectedMessageIndex === null) {
+                        setSelectedMessageIndex(0);
+                        return;
+                    }
+                    
+                    if (isColumnsMode) {
+                        // In columns mode, navigate by rows (user messages)
+                        // Find the next user message
+                        let nextUserIndex = selectedMessageIndex + 1;
+                        while (nextUserIndex < messages.length && messages[nextUserIndex].role !== 'user') {
+                            nextUserIndex++;
+                        }
+                        if (nextUserIndex < messages.length) {
+                            setSelectedMessageIndex(nextUserIndex);
+                        } else {
+                            // No more user messages below, shake
+                            setShouldShake(true);
+                            setTimeout(() => setShouldShake(false), 500);
+                        }
+                    } else {
+                        // In compact mode, navigate to next message
+                        if (selectedMessageIndex < messages.length - 1) {
+                            setSelectedMessageIndex(selectedMessageIndex + 1);
+                        } else {
+                            // At the bottom, shake current message
+                            setShouldShake(true);
+                            setTimeout(() => setShouldShake(false), 500);
+                        }
+                    }
+                }
+            }
+        };
+        window.addEventListener('keydown', handleMessageNavigation);
+        return () => window.removeEventListener('keydown', handleMessageNavigation);
+    }, [messages, selectedMessageIndex]);
 
     useShortcuts(shortcuts);
 
@@ -273,6 +373,8 @@ export default function Home() {
                                         onRetry={retryMessage}
                                         onEdit={editMessage}
                                         displayMode={savedSettings.displayMode || 'compact'}
+                                        selectedMessageIndex={selectedMessageIndex}
+                                        shouldShake={shouldShake}
                                     />
                                 </div>
                             </div>
