@@ -318,7 +318,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                     messageRefs.current[row.assistantIndex] = el;
                                 }
                             }}
-                            className="grid grid-cols-2 gap-6 py-6 first:pt-0 transition-all"
+                            className="grid grid-cols-2 gap-0 py-6 first:pt-0 transition-all"
                             style={{
                                 animation: ((selectedMessageIndex === row.userIndex || selectedMessageIndex === row.assistantIndex) && shouldShake)
                                     ? 'shake 0.5s ease-in-out'
@@ -326,7 +326,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                             }}
                         >
                             {/* Left Column - User Prompt */}
-                            <div id={`message-${row.userIndex}`} className="pr-3 border-r border-white/5">
+                            <div id={`message-${row.userIndex}`} className="pr-6 border-r border-white/5">
                                 {/* User Avatar */}
                                 <div className="flex items-center gap-2 mb-3">
                                     <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
@@ -410,7 +410,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                             </div>
                             
                             {/* Right Column - Assistant Response */}
-                            <div id={`message-${row.assistantIndex}`} className="pl-3">
+                            <div id={`message-${row.assistantIndex}`} className="pl-6">
                                 {/* Anchor Avatar */}
                                 <div className="flex items-center gap-2 mb-3">
                                     <img 
