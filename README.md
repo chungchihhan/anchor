@@ -1,16 +1,32 @@
+<div align="center">
+
 # Anchor
 
-A modern desktop chat application built with Next.js and Tauri.
+### A modern desktop chat application built with Next.js and Tauri
+
+![Anchor App](image.png)
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Tauri](https://img.shields.io/badge/Tauri-2.0-24C8DB?logo=tauri)](https://tauri.app)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
+
+</div>
+
+---
 
 ## Prerequisites
 
+Before you begin, ensure you have the following installed:
+
 - [Node.js](https://nodejs.org/) (v18 or higher)
 - [Rust](https://www.rust-lang.org/tools/install)
-- Tauri CLI
+- Xcode Command Line Tools (macOS)
 
-## Setup Instructions
+---
 
-### 1. Install Tauri Prerequisites (macOS)
+## Quick Start
+
+### Install Tauri Prerequisites (macOS)
 
 First, install the required dependencies for Tauri:
 
@@ -22,7 +38,7 @@ xcode-select --install
 curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
 ```
 
-Verify the installation:
+**Verify the installation:**
 
 ```bash
 # Check Xcode Command Line Tools
@@ -33,7 +49,7 @@ rustc --version
 cargo --version
 ```
 
-### 2. Install Dependencies
+### Install Dependencies
 
 Install the project dependencies:
 
@@ -41,7 +57,7 @@ Install the project dependencies:
 npm install
 ```
 
-### 3. Run the Development Server
+### Run the Development Server
 
 Start the Tauri development server:
 
@@ -49,9 +65,9 @@ Start the Tauri development server:
 npm run tauri dev
 ```
 
-This will launch the application in development mode with hot-reload enabled.
+This will launch the application in development mode with hot-reload enabled. 🔥
 
-### 4. Build the Application
+### Build the Application
 
 To build the production version of the app:
 
@@ -59,32 +75,51 @@ To build the production version of the app:
 npm run tauri build
 ```
 
-The built application will be available in `src-tauri/target/release/bundle/`.
+The built application will be available in `src-tauri/target/release/bundle/`. 📦
 
-### 5. Configure API Settings
+### Configure API Settings
 
 After opening the app:
 
-1. Press `Cmd + ,` (or `Command + Comma`) to open the Settings modal
+1. Press `⌘ + ,` (Command + Comma) to open the Settings modal ⚙️
 2. Enter your API endpoint URL
 3. Enter your API key
-4. Save the settings
+4. Save the settings ✅
 
-## Development
+---
 
-- **Frontend**: Built with Next.js 16 and React 19
-- **Desktop**: Powered by Tauri 2
-- **Styling**: Tailwind CSS with custom components
-- **Icons**: Lucide React
+## Tech Stack
 
-## Scripts
+| Category     | Technology                  |
+| ------------ | --------------------------- |
+| **Frontend** | Next.js 16 + React 19       |
+| **Desktop**  | Tauri 2                     |
+| **Styling**  | Tailwind CSS                |
+| **Icons**    | Lucide React                |
+| **Markdown** | react-markdown + remark-gfm |
 
-- `npm run dev` - Run Next.js development server
-- `npm run build` - Build Next.js for production
-- `npm run tauri dev` - Run Tauri development server
-- `npm run tauri build` - Build Tauri application for production
-- `npm run lint` - Run ESLint
+---
+
+## Available Scripts
+
+| Command               | Description                            |
+| --------------------- | -------------------------------------- |
+| `npm run dev`         | Run Next.js development server         |
+| `npm run build`       | Build Next.js for production           |
+| `npm run tauri dev`   | Run Tauri development server           |
+| `npm run tauri build` | Build Tauri application for production |
+| `npm run lint`        | Run ESLint                             |
+
+---
 
 ## License
 
-This project is private.
+Licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+Made with ❤️ using Tauri and Next.js
+
+</div>
