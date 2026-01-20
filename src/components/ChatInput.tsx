@@ -125,7 +125,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                         placeholder="Type a message..."
                         disabled={disabled}
                         rows={1}
-                        className="w-full bg-transparent text-white border-none placeholder-white/40 focus:outline-none resize-none max-h-24 overflow-y-auto px-2 font-light tracking-wide"
+                        className="w-full bg-transparent text-white border-none placeholder-white/40 focus:outline-none resize-none max-h-24 overflow-y-auto px-2 font-light tracking-wide whitespace-pre-wrap"
                     />
                 </div>
                 {!hideSendButton && (

@@ -374,7 +374,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="text-cyan-100 leading-normal text-left">
+                                        <div className="text-cyan-100 leading-normal text-left whitespace-pre-wrap">
                                             {typeof row.userMsg.content === 'string' ? row.userMsg.content : 
                                                 Array.isArray(row.userMsg.content) ? row.userMsg.content.map((item: any) => 
                                                     typeof item === 'string' ? item : item?.text || ''
