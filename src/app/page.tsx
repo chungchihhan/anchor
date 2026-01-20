@@ -104,9 +104,9 @@ export default function Home() {
     };
 
     /* Load saved shortcuts */
-    const savedSettings = useMemo(() => StorageService.getSettings(), [isSettingsOpen]); // Re-read when settings close
-    const currentShortcuts = savedSettings.shortcuts || DEFAULT_SETTINGS.shortcuts;
     const [isHelpOpen, setIsHelpOpen] = useState(false);
+    const savedSettings = useMemo(() => StorageService.getSettings(), [isSettingsOpen, isHelpOpen]); // Re-read when settings or help close
+    const currentShortcuts = savedSettings.shortcuts || DEFAULT_SETTINGS.shortcuts;
     const displayModeRef = useRef(savedSettings.displayMode || 'compact');
     
     // Update ref when display mode changes

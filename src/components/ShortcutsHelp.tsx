@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Shortcut } from '@/hooks/useShortcuts';
 import { X, Keyboard } from 'lucide-react';
 import { StorageService } from '@/services/StorageService';
-import { ShortcutMap } from '@/types';
+import { AppSettings } from '@/types';
 
 interface ShortcutsHelpProps {
     isOpen: boolean;
@@ -15,32 +15,31 @@ export function ShortcutsHelp({ isOpen, onClose, shortcuts }: ShortcutsHelpProps
     const [recordedKeys, setRecordedKeys] = useState<string>('');
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [localShortcuts, setLocalShortcuts] = useState<Shortcut[]>(shortcuts);
-    const [pendingChanges, setPendingChanges] = useState<ShortcutMap>({});
-    
-    // Use refs to avoid dependency issues
-    const localShortcutsRef = useRef(localShortcuts);
-    const pendingChangesRef = useRef(pendingChanges);
+    const [settings, setSettings] = useState<AppSettings | null>(null);
+    const [isMounted, setIsMounted] = useState(false);
     
     useEffect(() => {
-        localShortcutsRef.current = localShortcuts;
-    }, [localShortcuts]);
+        setIsMounted(true);
+    }, []);
     
-    useEffect(() => {
-        pendingChangesRef.current = pendingChanges;
-    }, [pendingChanges]);
-
-    // Update local shortcuts only when modal opens (store shortcuts in ref to avoid dependency)
+    // Update local shortcuts when modal opens
     const shortcutsRef = useRef(shortcuts);
     useEffect(() => {
         shortcutsRef.current = shortcuts;
     }, [shortcuts]);
     
     useEffect(() => {
-        if (isOpen) {
-            setLocalShortcuts(shortcutsRef.current);
-            setPendingChanges({});
+        if (isOpen && isMounted) {
+            try {
+                setLocalShortcuts(shortcutsRef.current);
+                setSettings(StorageService.getSettings());
+                setSelectedIndex(0);
+                setEditingId(null);
+            } catch (error) {
+                console.error('Failed to load shortcuts settings:', error);
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, isMounted]);
 
     const getShortcutId = (description: string): string | null => {
         const map: Record<string, string> = {
@@ -60,13 +59,26 @@ export function ShortcutsHelp({ isOpen, onClose, shortcuts }: ShortcutsHelpProps
         return id !== null;
     });
 
-    // Reset selection when modal opens
-    useEffect(() => {
-        if (isOpen) {
-            setSelectedIndex(0);
-            setEditingId(null);
+    const handleSave = () => {
+        if (!settings || !isMounted) return;
+        
+        try {
+            // Update settings with current shortcuts
+            const updatedShortcuts = localShortcuts.reduce((acc, s) => {
+                const id = getShortcutId(s.description);
+                if (id) acc[id] = s.key;
+                return acc;
+            }, {} as Record<string, string>);
+            
+            StorageService.saveSettings({
+                ...settings,
+                shortcuts: updatedShortcuts
+            });
+            onClose();
+        } catch (error) {
+            console.error('Failed to save shortcuts:', error);
         }
-    }, [isOpen]);
+    };
 
     useEffect(() => {
         if (!isOpen) return;
@@ -90,27 +102,14 @@ export function ShortcutsHelp({ isOpen, onClose, shortcuts }: ShortcutsHelpProps
                     }
                 } else if (e.key === 'Escape') {
                     e.preventDefault();
-                    // Save all pending changes when closing
-                    if (Object.keys(pendingChanges).length > 0) {
-                        const settings = StorageService.getSettings();
-                        StorageService.saveSettings({
-                            ...settings,
-                            shortcuts: {
-                                ...settings.shortcuts,
-                                ...pendingChanges
-                            }
-                        });
-                        window.location.reload();
-                    } else {
-                        onClose();
-                    }
+                    handleSave();
                 }
             };
 
             window.addEventListener('keydown', handleNavigation, true);
             return () => window.removeEventListener('keydown', handleNavigation, true);
         }
-    }, [isOpen, editingId, selectedIndex, onClose]);
+    }, [isOpen, editingId, selectedIndex]);
 
     useEffect(() => {
         if (!editingId) return;
@@ -145,10 +144,9 @@ export function ShortcutsHelp({ isOpen, onClose, shortcuts }: ShortcutsHelpProps
                 
                 const newShortcut = parts.join('+');
                 
-                // Check for duplicates in both pending and saved shortcuts
-                const settings = StorageService.getSettings();
-                const allShortcuts = { ...settings.shortcuts, ...pendingChangesRef.current };
-                const isDuplicate = Object.entries(allShortcuts).some(
+                // Check for duplicates
+                if (!settings) return;
+                const isDuplicate = Object.entries(settings.shortcuts).some(
                     ([key, value]) => key !== editingId && value === newShortcut
                 );
                 
@@ -159,7 +157,7 @@ export function ShortcutsHelp({ isOpen, onClose, shortcuts }: ShortcutsHelpProps
                     return;
                 }
                 
-                // Update local display immediately
+                // Update local shortcuts display
                 setLocalShortcuts(prevShortcuts => prevShortcuts.map(s => {
                     const id = getShortcutId(s.description);
                     if (id === editingId) {
@@ -168,11 +166,17 @@ export function ShortcutsHelp({ isOpen, onClose, shortcuts }: ShortcutsHelpProps
                     return s;
                 }));
                 
-                // Store pending change
-                setPendingChanges(prev => ({
-                    ...prev,
-                    [editingId]: newShortcut
-                }));
+                // Update settings state
+                setSettings(prev => {
+                    if (!prev) return prev;
+                    return {
+                        ...prev,
+                        shortcuts: {
+                            ...prev.shortcuts,
+                            [editingId]: newShortcut
+                        }
+                    };
+                });
                 
                 // Exit edit mode
                 setEditingId(null);
@@ -210,31 +214,8 @@ export function ShortcutsHelp({ isOpen, onClose, shortcuts }: ShortcutsHelpProps
         return k.toUpperCase();
     };
 
-    const handleClose = () => {
-        // Save pending changes before closing
-        if (Object.keys(pendingChanges).length > 0) {
-            const updatedShortcuts = localShortcuts.map(s => {
-                const id = getShortcutId(s.description);
-                if (id && pendingChanges[id]) {
-                    return { ...s, key: pendingChanges[id] };
-                }
-                return s;
-            });
-
-            const settings = StorageService.getSettings();
-            settings.shortcuts = updatedShortcuts.reduce((acc, s) => {
-                const id = getShortcutId(s.description);
-                if (id) acc[id] = s.key;
-                return acc;
-            }, {} as Record<string, string>);
-            StorageService.saveSettings(settings);
-            window.location.reload();
-        }
-        onClose();
-    };
-
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all" onClick={handleClose}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all" onClick={onClose}>
             <div
                 className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-xl w-full max-w-3xl shadow-2xl flex flex-col animate-in fade-in zoom-in duration-150 overflow-hidden ring-1 ring-white/5 max-h-[85vh]"
                 onClick={e => e.stopPropagation()}
@@ -247,9 +228,9 @@ export function ShortcutsHelp({ isOpen, onClose, shortcuts }: ShortcutsHelpProps
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="text-[10px] text-white/40 border border-white/10 px-1.5 py-0.5 rounded font-mono">
-                            ↑↓ Navigate • Enter to edit • Esc to {Object.keys(pendingChanges).length > 0 ? 'save & close' : 'close'}
+                            ↑↓ Navigate • Enter to edit • Esc to save & close
                         </div>
-                        <button onClick={handleClose} className="text-white/40 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-md">
+                        <button onClick={onClose} className="text-white/40 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-md">
                             <X size={20} />
                         </button>
                     </div>
