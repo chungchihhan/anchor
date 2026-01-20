@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Anchor
 
-## Getting Started
+A modern desktop chat application built with Next.js and Tauri.
 
-First, run the development server:
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18 or higher)
+- [Rust](https://www.rust-lang.org/tools/install)
+- Tauri CLI
+
+## Setup Instructions
+
+### 1. Install Tauri Prerequisites (macOS)
+
+First, install the required dependencies for Tauri:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Install Xcode Command Line Tools
+xcode-select --install
+
+# Install Rust (if not already installed)
+curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Verify the installation:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Check Xcode Command Line Tools
+xcode-select -p
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Check Rust and Cargo versions
+rustc --version
+cargo --version
+```
 
-## Learn More
+### 2. Install Dependencies
 
-To learn more about Next.js, take a look at the following resources:
+Install the project dependencies:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm install
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 3. Run the Development Server
 
-## Deploy on Vercel
+Start the Tauri development server:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run tauri dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This will launch the application in development mode with hot-reload enabled.
+
+### 4. Build the Application
+
+To build the production version of the app:
+
+```bash
+npm run tauri build
+```
+
+The built application will be available in `src-tauri/target/release/bundle/`.
+
+### 5. Configure API Settings
+
+After opening the app:
+
+1. Press `Cmd + ,` (or `Command + Comma`) to open the Settings modal
+2. Enter your API endpoint URL
+3. Enter your API key
+4. Save the settings
+
+## Development
+
+- **Frontend**: Built with Next.js 16 and React 19
+- **Desktop**: Powered by Tauri 2
+- **Styling**: Tailwind CSS with custom components
+- **Icons**: Lucide React
+
+## Scripts
+
+- `npm run dev` - Run Next.js development server
+- `npm run build` - Build Next.js for production
+- `npm run tauri dev` - Run Tauri development server
+- `npm run tauri build` - Build Tauri application for production
+- `npm run lint` - Run ESLint
+
+## License
+
+This project is private.
