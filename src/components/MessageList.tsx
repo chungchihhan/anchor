@@ -107,6 +107,8 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editContent, setEditContent] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const isComposingRef = useRef(false);
+    const justFinishedComposingRef = useRef(false);
     const shouldAutoScrollRef = useRef(true);
     const scrollContainerRef = useRef<HTMLElement | null>(null);
     const isAutoScrollingRef = useRef(false);
@@ -268,6 +270,22 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
     };
 
     const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+        // Check for IME composition using keyCode 229
+        if (e.nativeEvent.keyCode === 229) {
+            return;
+        }
+
+        // Block Enter if currently composing
+        if (e.nativeEvent.isComposing || isComposingRef.current) {
+            return;
+        }
+
+        // Block Enter if we just finished composing (to avoid saving when confirming IME)
+        if (justFinishedComposingRef.current && e.key === 'Enter') {
+            justFinishedComposingRef.current = false;
+            return;
+        }
+        
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             saveEdit(index);
@@ -300,7 +318,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                     messageRefs.current[row.assistantIndex] = el;
                                 }
                             }}
-                            className="grid grid-cols-2 gap-6 py-6 first:pt-0 transition-all"
+                            className="grid grid-cols-2 gap-0 py-6 first:pt-0 transition-all"
                             style={{
                                 animation: ((selectedMessageIndex === row.userIndex || selectedMessageIndex === row.assistantIndex) && shouldShake)
                                     ? 'shake 0.5s ease-in-out'
@@ -308,7 +326,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                             }}
                         >
                             {/* Left Column - User Prompt */}
-                            <div id={`message-${row.userIndex}`} className="pr-3 border-r border-white/5">
+                            <div id={`message-${row.userIndex}`} className="pr-6 border-r border-white/5">
                                 {/* User Avatar */}
                                 <div className="flex items-center gap-2 mb-3">
                                     <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
@@ -324,6 +342,17 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                             value={editContent}
                                             onChange={(e) => setEditContent(e.target.value)}
                                             onKeyDown={(e) => handleKeyDown(e, row.userIndex)}
+                                            onCompositionStart={() => {
+                                                isComposingRef.current = true;
+                                                justFinishedComposingRef.current = false;
+                                            }}
+                                            onCompositionEnd={() => {
+                                                isComposingRef.current = false;
+                                                justFinishedComposingRef.current = true;
+                                                setTimeout(() => {
+                                                    justFinishedComposingRef.current = false;
+                                                }, 200);
+                                            }}
                                             className="w-full bg-transparent border-none outline-none resize-none text-white placeholder-white/40 p-0 text-base leading-relaxed font-light tracking-wide"
                                             rows={1}
                                             autoFocus
@@ -345,7 +374,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="text-cyan-100 leading-normal text-left">
+                                        <div className="text-cyan-100 leading-normal text-left whitespace-pre-wrap">
                                             {typeof row.userMsg.content === 'string' ? row.userMsg.content : 
                                                 Array.isArray(row.userMsg.content) ? row.userMsg.content.map((item: any) => 
                                                     typeof item === 'string' ? item : item?.text || ''
@@ -381,7 +410,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                             </div>
                             
                             {/* Right Column - Assistant Response */}
-                            <div id={`message-${row.assistantIndex}`} className="pl-3">
+                            <div id={`message-${row.assistantIndex}`} className="pl-6">
                                 {/* Anchor Avatar */}
                                 <div className="flex items-center gap-2 mb-3">
                                     <img 
@@ -574,6 +603,17 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                             value={editContent}
                                             onChange={(e) => setEditContent(e.target.value)}
                                             onKeyDown={(e) => handleKeyDown(e, index)}
+                                            onCompositionStart={() => {
+                                                isComposingRef.current = true;
+                                                justFinishedComposingRef.current = false;
+                                            }}
+                                            onCompositionEnd={() => {
+                                                isComposingRef.current = false;
+                                                justFinishedComposingRef.current = true;
+                                                setTimeout(() => {
+                                                    justFinishedComposingRef.current = false;
+                                                }, 200);
+                                            }}
                                             className="w-full bg-transparent border-none outline-none resize-none text-white placeholder-white/40 p-0 text-base leading-relaxed font-light tracking-wide"
                                             rows={1}
                                             autoFocus

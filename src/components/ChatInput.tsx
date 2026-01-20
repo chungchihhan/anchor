@@ -19,6 +19,8 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
     function ChatInput({ onSend, onStop, disabled, isLoading, hideSendButton = false }, ref) {
     const [input, setInput] = useState('');
     const [isMultiLine, setIsMultiLine] = useState(false);
+    const isComposingRef = useRef(false);
+    const justFinishedComposingRef = useRef(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     useImperativeHandle(ref, () => ({
@@ -38,7 +40,21 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
     };
 
     const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.nativeEvent.isComposing) return;
+        // Check for IME composition using keyCode 229
+        if (e.nativeEvent.keyCode === 229) {
+            return;
+        }
+
+        // Block Enter if currently composing
+        if (e.nativeEvent.isComposing || isComposingRef.current) {
+            return;
+        }
+
+        // Block Enter if we just finished composing (to avoid sending when confirming IME)
+        if (justFinishedComposingRef.current && e.key === 'Enter') {
+            justFinishedComposingRef.current = false;
+            return;
+        }
 
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -94,10 +110,22 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                         value={input}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
+                        onCompositionStart={() => {
+                            isComposingRef.current = true;
+                            justFinishedComposingRef.current = false;
+                        }}
+                        onCompositionEnd={() => {
+                            isComposingRef.current = false;
+                            justFinishedComposingRef.current = true;
+                            // Clear the flag after a delay to allow normal Enter after composition
+                            setTimeout(() => {
+                                justFinishedComposingRef.current = false;
+                            }, 200);
+                        }}
                         placeholder="Type a message..."
                         disabled={disabled}
                         rows={1}
-                        className="w-full bg-transparent text-white border-none placeholder-white/40 focus:outline-none resize-none max-h-24 overflow-y-auto px-2 font-light tracking-wide"
+                        className="w-full bg-transparent text-white border-none placeholder-white/40 focus:outline-none resize-none max-h-24 overflow-y-auto px-2 font-light tracking-wide whitespace-pre-wrap"
                     />
                 </div>
                 {!hideSendButton && (
