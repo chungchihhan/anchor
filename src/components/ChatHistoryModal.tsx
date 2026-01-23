@@ -175,13 +175,18 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
         }
     }, [highlightedIndex, isOpen, filteredSessions]);
 
-    // Scroll preview to bottom when highlighted index changes
-    const previewEndRef = useRef<HTMLDivElement>(null);
+    // Scroll to top when switching between chats
+    const previewContainerRef = useRef<HTMLDivElement>(null);
+    const prevHighlightedIndexRef = useRef<number | null>(null);
+
     useEffect(() => {
-        if (previewEndRef.current) {
-            previewEndRef.current.scrollIntoView({ behavior: 'auto' });
+        if (prevHighlightedIndexRef.current !== null &&
+            prevHighlightedIndexRef.current !== highlightedIndex &&
+            previewContainerRef.current) {
+            previewContainerRef.current.scrollTop = 0;
         }
-    }, [highlightedIndex, filteredSessions]);
+        prevHighlightedIndexRef.current = highlightedIndex;
+    }, [highlightedIndex]);
 
     if (!isOpen) return null;
 
@@ -292,7 +297,7 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                         {selectedSession.messages.length} messages
                                     </p>
                                 </div>
-                                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar relative" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)' }}>
+                                <div ref={previewContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar relative" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)' }}>
                                     {selectedSession.messages.map((msg, idx) => (
                                         <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                                             <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
@@ -423,7 +428,6 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                             </div>
                                         </div>
                                     ))}
-                                    <div ref={previewEndRef} />
                                 </div>
                                 {/* Gradient Overlay at bottom */}
                                 <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
