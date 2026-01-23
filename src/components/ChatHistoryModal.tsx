@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { FolderOpen, Trash2, Copy, Check } from 'lucide-react';
+import { FolderOpen, Trash2, Copy, Check, User } from 'lucide-react';
 import { ChatSession } from '@/types';
 
 interface ChatHistoryModalProps {
@@ -16,7 +16,7 @@ interface ChatHistoryModalProps {
 
 const TableBlock = ({ node, className, children, ...props }: any) => {
     return (
-        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm">
+        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
             <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
                 <span>Table</span>
             </div>
@@ -210,7 +210,7 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
 
                 <div className="flex flex-1 overflow-hidden">
                     {/* Left Sidebar: Chat List */}
-                    <div className="w-1/3 border-r border-white/10 flex flex-col bg-black/20">
+                    <div className="w-1/3 border-r border-white/10 flex flex-col bg-black/20 flex-shrink-0">
                         {/* Search Bar */}
                         <div className="p-3 border-b border-white/5">
                             <input
@@ -288,7 +288,7 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                     </div>
 
                     {/* Right Panel: Chat Preview */}
-                    <div className="flex-1 flex flex-col bg-black/40 relative">
+                    <div className="flex-1 flex flex-col bg-black/40 relative min-w-0 overflow-hidden">
                         {selectedSession ? (
                             <>
                                 <div className="p-4 bg-gradient-to-b from-black/60 to-transparent backdrop-blur-sm flex items-center justify-between">
@@ -297,14 +297,32 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                         {selectedSession.messages.length} messages
                                     </p>
                                 </div>
-                                <div ref={previewContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar relative" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)' }}>
+                                <div ref={previewContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-8 custom-scrollbar relative" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)' }}>
                                     {selectedSession.messages.map((msg, idx) => (
-                                        <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                            <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
-                                                ? 'bg-white/10 text-white rounded-br-sm'
-                                                : 'bg-white/5 text-gray-300 rounded-bl-sm'
-                                                }`}>
-                                                <div className={`leading-normal ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                                        <div key={idx} className="flex flex-col w-full max-w-full min-w-0">
+                                            {/* Avatar and name on top */}
+                                            <div className="flex items-center gap-2 mb-2">
+                                                {msg.role === 'assistant' ? (
+                                                    <>
+                                                        <img
+                                                            src="/anchor-avatar.png"
+                                                            alt="Anchor"
+                                                            className="w-6 h-6 rounded-full flex-shrink-0"
+                                                        />
+                                                        <span className="text-sm text-white/60 font-medium">Anchor</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                                                            <User size={16} className="text-white" />
+                                                        </div>
+                                                        <span className="text-sm text-white/60 font-medium">You</span>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            <div className={`w-full px-0 py-2 transition-all overflow-hidden ${msg.role === 'user' ? 'bg-white/5 rounded-lg px-4 py-3 backdrop-blur-sm' : ''}`}>
+                                                <div className={`leading-normal text-left break-words overflow-wrap-anywhere ${msg.role === 'user' ? 'text-cyan-100' : 'text-gray-300'}`} style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                                                     {(() => {
                                                         const { processedContent, thinkBlocks } = preprocessContent(msg.content);
                                                         const parts = processedContent.split(/(__THINK_BLOCK_\d+__)/);
@@ -323,15 +341,15 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                                                             key={`md-${i}`}
                                                                             remarkPlugins={[remarkGfm]}
                                                                             components={{
-                                                                                p: ({ node, ...props }) => <p className="my-2" {...props} />,
-                                                                                h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-3" {...props} />,
-                                                                                h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3" {...props} />,
-                                                                                h3: ({ node, ...props }) => <h3 className="text-lg font-semibold my-3" {...props} />,
-                                                                                ul: ({ node, ...props }) => <ul className={`list-disc mb-3 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
-                                                                                ol: ({ node, ...props }) => <ol className={`list-decimal mb-3 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
-                                                                                li: ({ node, ...props }) => <li className="mb-1" {...props} />,
-                                                                                blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-3 italic bg-white/5 rounded-r" {...props} />,
-                                                                                hr: ({ node, ...props }) => <hr className="my-6 border-t-2 border-white/20" {...props} />,
+                                                                                p: ({ node, ...props }) => <p className="my-2 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+                                                                                h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+                                                                                h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+                                                                                h3: ({ node, ...props }) => <h3 className="text-lg font-semibold my-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+                                                                                ul: ({ node, ...props }) => <ul className="list-disc pl-4 ml-2 my-3 break-words" {...props} />,
+                                                                                ol: ({ node, ...props }) => <ol className="list-decimal pl-4 ml-2 my-3 break-words" {...props} />,
+                                                                                li: ({ node, ...props }) => <li className="my-1 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+                                                                                blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-4 italic bg-white/5 rounded-r" {...props} />,
+                                                                                hr: ({ node, ...props }) => <hr className="my-6 border-t-2 border-white/60" {...props} />,
                                                                                 pre: ({ children }) => <>{children}</>,
                                                                                 table: TableBlock,
                                                                                 thead: ({ node, ...props }) => <thead className="bg-white/5 text-xs uppercase font-medium text-white/60" {...props} />,
@@ -353,7 +371,7 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                                                                     };
 
                                                                                     return isBlock ? (
-                                                                                        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-3 bg-black/50 text-left backdrop-blur-sm">
+                                                                                        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
                                                                                             <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
                                                                                                 <span>{isMatch ? isMatch[1] : 'code'}</span>
                                                                                                 <button onClick={handleCopy} className="hover:text-white transition-colors">
@@ -375,7 +393,7 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                                                                             </div>
                                                                                         </div>
                                                                                     ) : (
-                                                                                        <code className="bg-white/10 px-1.5 py-0.5 rounded text-cyan-300 font-mono text-xs" {...props}>
+                                                                                        <code {...props} className={`${className} bg-white/10 rounded px-1.5 py-0.5 text-red-200`}>
                                                                                             {children}
                                                                                         </code>
                                                                                     );
@@ -391,8 +409,9 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                                     })()}
                                                 </div>
                                             </div>
+
                                             {/* Meta and Actions */}
-                                            <div className={`flex items-center gap-2 mt-1.5 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                                            <div className="flex items-center gap-2 mt-1.5">
                                                 {msg.timestamp && (
                                                     <span className="text-[10px] text-white/30 font-mono">
                                                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
