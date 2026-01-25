@@ -91,3 +91,148 @@ body::after {
   10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
   20%, 40%, 60%, 80% { transform: translateX(2px); }
 }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 2px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes smoothBounce {
+  0%, 80%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.5;
+  }
+  40% {
+    transform: translateY(-8px) scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -100% 0; }
+  100% { background-position: 100% 0; }
+}
+
+/* Smooth streaming text animation */
+.streaming-message {
+  animation: fadeIn 0.15s ease-out;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+  /* Prevent text reflow */
+  line-height: 1.6;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+  /* GPU acceleration for smoother rendering */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.streaming-message p,
+.streaming-message li,
+.streaming-message h1,
+.streaming-message h2,
+.streaming-message h3,
+.streaming-message pre,
+.streaming-message code,
+.streaming-message blockquote {
+  animation: fadeIn 0.1s ease-out;
+  animation-fill-mode: both;
+  transition: opacity 0.1s ease-out, transform 0.1s ease-out;
+  /* Consistent line heights to prevent jumps */
+  line-height: inherit;
+  /* Optimize for streaming performance */
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Progressive delay reduced for faster cascade */
+.streaming-message > *:nth-child(1) { animation-delay: 0ms; }
+.streaming-message > *:nth-child(2) { animation-delay: 10ms; }
+.streaming-message > *:nth-child(3) { animation-delay: 20ms; }
+.streaming-message > *:nth-child(4) { animation-delay: 30ms; }
+.streaming-message > *:nth-child(5) { animation-delay: 40ms; }
+.streaming-message > *:nth-child(n+6) { animation-delay: 50ms; }
+
+/* Typing cursor effect - removed, not needed */
+
+/* Smooth height transitions for growing content */
+.message-container {
+  transition: height 0.3s ease-out, max-height 0.3s ease-out;
+  will-change: height;
+  /* Prevent collapse during streaming */
+  min-height: 1.5rem;
+}
+
+/* Smooth transitions for message appearance */
+.message-container > * {
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+/* Message container during active streaming */
+.message-container.streaming {
+  /* Reserve space to prevent layout jumps */
+  min-height: 3rem;
+  /* Smooth height transitions with optimized easing */
+  transition: height 0.1s cubic-bezier(0.25, 0, 0.25, 1);
+  /* GPU acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Buffer zone for smooth streaming */
+.streaming-buffer {
+  height: 100px;
+  transition: height 0.2s ease-out;
+  flex-shrink: 0;
+  opacity: 0;
+  /* Ensure buffer doesn't affect layout calculations */
+  pointer-events: none;
+}
+
+/* Smooth scroll behavior - disabled for RAF-based scrolling */
+.smooth-scroll {
+  /* We handle smoothness via RAF, not CSS */
+  scroll-behavior: auto;
+}
+
+/* Optimized streaming container */
+.streaming-container {
+  /* Optimize for scroll performance */
+  will-change: scroll-position;
+  /* Prevent layout shift during streaming */
+  overflow-anchor: none;
+  /* Enable GPU acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Optimize rendering */
+  contain: layout;
+}
+
+/* Active streaming optimizations */
+.streaming-active {
+  overflow-anchor: none;
+  /* CSS containment for performance */
+  contain: layout style paint;
+  /* Force GPU layer */
+  will-change: transform;
+}
+
+/* Disable CSS smooth scrolling during RAF animations */
+.streaming-active * {
+  scroll-behavior: auto !important;
+}

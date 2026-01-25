@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { FolderOpen, Trash2, Copy, Check, User } from 'lucide-react';
+import { FolderOpen, Trash2, Copy, Check, User, Anchor } from 'lucide-react';
 import { ChatSession } from '@/types';
 
 interface ChatHistoryModalProps {
@@ -193,11 +193,9 @@ const MessagePreview = memo(({ msg, idx, onCopyMessage, msgsCopied }: {
             <div className="flex items-center gap-2 mb-2">
                 {msg.role === 'assistant' ? (
                     <>
-                        <img
-                            src="/anchor-avatar.png"
-                            alt="Anchor"
-                            className="w-6 h-6 rounded-full flex-shrink-0"
-                        />
+                        <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                            <Anchor size={16} className="text-white" />
+                        </div>
                         <span className="text-sm text-white/60 font-medium">Anchor</span>
                     </>
                 ) : (
