@@ -866,6 +866,8 @@ export const MessageList = memo(function MessageList({
         container.scrollTop = container.scrollHeight - container.clientHeight;
         lastScrollTopRef.current = container.scrollTop;
         isAutoScrollingRef.current = false;
+        // Immediately hide the scroll button when jumping to bottom
+        setShowScrollToBottom(false);
         return;
       }
 
@@ -905,12 +907,9 @@ export const MessageList = memo(function MessageList({
       hasUserScrolledDuringStreamRef.current = false;
       shouldAutoScrollRef.current = true;
 
-      // Instant jump if user wasn't at bottom before sending
-      if (!wasAtBottomBeforeNewMessageRef.current) {
-        scrollToBottom(true);
-      } else {
-        scrollToBottom();
-      }
+      // Always instant jump to bottom when user sends a message
+      // This ensures immediate feedback regardless of scroll position
+      scrollToBottom(true);
     } else if (loadingStarted) {
       hasUserScrolledDuringStreamRef.current = false;
       shouldAutoScrollRef.current = true;
