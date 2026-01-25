@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { ChatInput, ChatInputRef } from "@/components/ChatInput";
 import { MessageList } from "@/components/MessageList";
 import { SettingsModal } from "@/components/SettingsModal";
@@ -28,6 +28,23 @@ export default function Home() {
   >(null);
   const [shouldShake, setShouldShake] = useState(false);
 
+  const {
+    messages,
+    isLoading,
+    error,
+    sendMessage,
+    stopGeneration,
+    clearChat,
+    selectedModel,
+    setSelectedModel,
+    availableModels,
+    exportChat,
+    downloadChat,
+    importChat,
+    retryMessage,
+    editMessage,
+  } = useChat();
+
   const phrases = [
     "What's on your mind?",
     "What shall we explore?",
@@ -35,6 +52,9 @@ export default function Home() {
   ];
 
   useEffect(() => {
+    // Only run typing animation when messages are empty
+    if (messages.length > 0) return;
+
     const currentPhrase = phrases[phraseIndex];
     const typingSpeed = isDeleting ? 50 : 100;
     const pauseTime = 4000;
@@ -60,24 +80,7 @@ export default function Home() {
     }, typingSpeed);
 
     return () => clearTimeout(timeout);
-  }, [displayedText, isDeleting, phraseIndex]);
-
-  const {
-    messages,
-    isLoading,
-    error,
-    sendMessage,
-    stopGeneration,
-    clearChat,
-    selectedModel,
-    setSelectedModel,
-    availableModels,
-    exportChat,
-    downloadChat,
-    importChat,
-    retryMessage,
-    editMessage,
-  } = useChat();
+  }, [displayedText, isDeleting, phraseIndex, messages.length]);
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
   const [savedFiles, setSavedFiles] = useState<any[]>([]);
 
