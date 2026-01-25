@@ -14,6 +14,8 @@ interface MessageListProps {
   displayMode?: "compact" | "columns";
   selectedMessageIndex?: number | null;
   shouldShake?: boolean;
+  onScrollStateChange?: (showButton: boolean) => void;
+  scrollToBottomRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 // Memoized table block component
@@ -548,6 +550,8 @@ export const MessageList = memo(function MessageList({
   displayMode = "compact",
   selectedMessageIndex = null,
   shouldShake = false,
+  onScrollStateChange,
+  scrollToBottomRef,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -569,6 +573,7 @@ export const MessageList = memo(function MessageList({
   const isStreamingRef = useRef(false);
   const isInitialLoadRef = useRef(true);
   const wasAtBottomBeforeNewMessageRef = useRef(true);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
   const handleCopyMessage = useCallback((content: string, index: number) => {
     navigator.clipboard.writeText(content);
@@ -626,6 +631,8 @@ export const MessageList = memo(function MessageList({
     // Consider user at bottom if within 10px (accounting for rounding)
     shouldAutoScrollRef.current = distanceFromBottom < 10;
     lastScrollTopRef.current = scrollTop;
+    // Set initial scroll button visibility
+    setShowScrollToBottom(distanceFromBottom > 100);
 
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
@@ -653,10 +660,14 @@ export const MessageList = memo(function MessageList({
           rafIdRef.current = null;
           isAutoScrollingRef.current = false;
         }
+        // Show scroll to bottom button
+        setShowScrollToBottom(true);
       } else if (distanceFromBottom < 10) {
         // User is very close to bottom, re-enable auto-scroll
         shouldAutoScrollRef.current = true;
         hasUserScrolledDuringStreamRef.current = false;
+        // Hide scroll to bottom button
+        setShowScrollToBottom(false);
       }
 
       lastScrollTopRef.current = scrollTop;
@@ -710,6 +721,31 @@ export const MessageList = memo(function MessageList({
       container.removeEventListener("touchmove", handleTouchMove);
     };
   }, []);
+
+  // Manual scroll to bottom function
+  const scrollToBottomManual = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    // Instant scroll to bottom
+    container.scrollTop = container.scrollHeight - container.clientHeight;
+    lastScrollTopRef.current = container.scrollTop;
+    shouldAutoScrollRef.current = true;
+    hasUserScrolledDuringStreamRef.current = false;
+    setShowScrollToBottom(false);
+  }, []);
+
+  // Update parent component when scroll button visibility changes
+  useEffect(() => {
+    onScrollStateChange?.(showScrollToBottom);
+  }, [showScrollToBottom, onScrollStateChange]);
+
+  // Expose scrollToBottom function to parent
+  useEffect(() => {
+    if (scrollToBottomRef) {
+      scrollToBottomRef.current = scrollToBottomManual;
+    }
+  }, [scrollToBottomRef, scrollToBottomManual]);
 
   // RAF-based smooth scrolling with adaptive easing
   const smoothScrollToBottom = useCallback(
@@ -942,8 +978,8 @@ export const MessageList = memo(function MessageList({
         ref={containerRef}
         className={`p-4 smooth-scroll ${isStreamingActive ? "streaming-container streaming-active" : ""}`}
       >
-        <div className="space-y-0 min-w-0 overflow-hidden">
-          {messageRows.map((row, rowIndex) => (
+          <div className="space-y-0 min-w-0 overflow-hidden">
+            {messageRows.map((row, rowIndex) => (
             <div
               key={rowIndex}
               ref={(el) => {
@@ -1113,20 +1149,20 @@ export const MessageList = memo(function MessageList({
               </div>
             </div>
           ))}
+          </div>
+          {/* Add buffer zone during streaming for smooth scrolling */}
+          {isStreamingActive && (
+            <div
+              className="streaming-buffer"
+              style={{
+                height: "150px",
+                transition: "height 0.3s ease-out",
+                opacity: 0,
+              }}
+            />
+          )}
+          <div ref={bottomRef} />
         </div>
-        {/* Add buffer zone during streaming for smooth scrolling */}
-        {isStreamingActive && (
-          <div
-            className="streaming-buffer"
-            style={{
-              height: "150px",
-              transition: "height 0.3s ease-out",
-              opacity: 0,
-            }}
-          />
-        )}
-        <div ref={bottomRef} />
-      </div>
     );
   }
 
@@ -1141,7 +1177,7 @@ export const MessageList = memo(function MessageList({
       ref={containerRef}
       className={`p-4 space-y-8 smooth-scroll ${isStreamingActive ? "streaming-container streaming-active" : ""}`}
     >
-      {messages.map((msg, index) => (
+        {messages.map((msg, index) => (
         <div
           id={`message-${index}`}
           key={index}
@@ -1276,7 +1312,7 @@ export const MessageList = memo(function MessageList({
           }}
         />
       )}
-      <div ref={bottomRef} />
-    </div>
+        <div ref={bottomRef} />
+      </div>
   );
 });

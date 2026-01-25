@@ -27,6 +27,8 @@ export default function Home() {
     number | null
   >(null);
   const [shouldShake, setShouldShake] = useState(false);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const scrollToBottomRef = useRef<(() => void) | null>(null);
 
   const {
     messages,
@@ -405,6 +407,7 @@ export default function Home() {
                   onStop={stopGeneration}
                   disabled={isLoading}
                   isLoading={isLoading}
+                  showScrollToBottom={false}
                 />
               </div>
             </div>
@@ -435,6 +438,8 @@ export default function Home() {
                     displayMode={savedSettings.displayMode || "compact"}
                     selectedMessageIndex={selectedMessageIndex}
                     shouldShake={shouldShake}
+                    onScrollStateChange={setShowScrollToBottom}
+                    scrollToBottomRef={scrollToBottomRef}
                   />
                 </div>
               </div>
@@ -447,6 +452,8 @@ export default function Home() {
                   onStop={stopGeneration}
                   disabled={isLoading}
                   isLoading={isLoading}
+                  showScrollToBottom={showScrollToBottom}
+                  onScrollToBottom={() => scrollToBottomRef.current?.()}
                 />
               </div>
             </div>
