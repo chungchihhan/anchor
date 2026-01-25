@@ -18,7 +18,7 @@ interface MessageListProps {
 
 const TableBlock = ({ node, className, children, ...props }: any) => {
     return (
-        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm">
+        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
             <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
                 <span>Table</span>
             </div>
@@ -298,7 +298,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
         <div ref={containerRef} className={displayMode === 'columns' ? 'p-4' : 'p-4 space-y-8'}>
             {displayMode === 'columns' ? (
                 /* Columns Mode: Two-column layout with prompts on left, responses on right */
-                <div className="space-y-0">
+                <div className="space-y-0 min-w-0 overflow-hidden">
                     {messages.reduce((rows: any[], msg, index) => {
                         if (msg.role === 'user') {
                             // Start a new row with the user message
@@ -318,7 +318,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                     messageRefs.current[row.assistantIndex] = el;
                                 }
                             }}
-                            className="grid grid-cols-2 gap-0 py-6 first:pt-0 transition-all"
+                            className="grid grid-cols-2 gap-0 py-6 first:pt-0 transition-all min-w-0 overflow-hidden"
                             style={{
                                 animation: ((selectedMessageIndex === row.userIndex || selectedMessageIndex === row.assistantIndex) && shouldShake)
                                     ? 'shake 0.5s ease-in-out'
@@ -326,7 +326,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                             }}
                         >
                             {/* Left Column - User Prompt */}
-                            <div id={`message-${row.userIndex}`} className="pr-6 border-r border-white/5">
+                            <div id={`message-${row.userIndex}`} className="pr-6 border-r border-white/5 min-w-0 overflow-hidden">
                                 {/* User Avatar */}
                                 <div className="flex items-center gap-2 mb-3">
                                     <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
@@ -374,7 +374,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="text-cyan-100 leading-normal text-left whitespace-pre-wrap">
+                                        <div className="text-cyan-100 leading-normal text-left whitespace-pre-wrap break-words" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                                             {typeof row.userMsg.content === 'string' ? row.userMsg.content : 
                                                 Array.isArray(row.userMsg.content) ? row.userMsg.content.map((item: any) => 
                                                     typeof item === 'string' ? item : item?.text || ''
@@ -410,7 +410,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                             </div>
                             
                             {/* Right Column - Assistant Response */}
-                            <div id={`message-${row.assistantIndex}`} className="pl-6">
+                            <div id={`message-${row.assistantIndex}`} className="pl-6 min-w-0 overflow-hidden">
                                 {/* Anchor Avatar */}
                                 <div className="flex items-center gap-2 mb-3">
                                     <img 
@@ -431,7 +431,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                             </div>
                                         ) : (
                                             <>
-                                                <div className="text-gray-300 leading-normal text-left">
+                                                <div className="text-gray-300 leading-normal text-left break-words" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                                                     {(() => {
                                                         const { processedContent, thinkBlocks } = preprocessContent(row.assistantMsg.content);
                                                         const parts = processedContent.split(/(__THINK_BLOCK_\d+__)/);
@@ -450,13 +450,13 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                                             key={`md-${i}`}
                                                                             remarkPlugins={[remarkGfm]}
                                                                             components={{
-                                                                                p: ({ node, ...props }) => <p className="my-2" {...props} />,
-                                                                                h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-3" {...props} />,
-                                                                                h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3" {...props} />,
-                                                                                h3: ({ node, ...props }) => <h3 className="text-lg font-semibold my-3" {...props} />,
-                                                                                ul: ({ node, ...props }) => <ul className="list-disc pl-4 ml-2 mb-4" {...props} />,
-                                                                                ol: ({ node, ...props }) => <ol className="list-decimal pl-4 ml-2 mb-4" {...props} />,
-                                                                                li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                                                                                p: ({ node, ...props }) => <p className="my-2 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+                                                                                h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+                                                                                h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+                                                                                h3: ({ node, ...props }) => <h3 className="text-lg font-semibold my-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+                                                                                ul: ({ node, ...props }) => <ul className="list-disc pl-4 ml-2 mb-4 break-words" {...props} />,
+                                                                                ol: ({ node, ...props }) => <ol className="list-decimal pl-4 ml-2 mb-4 break-words" {...props} />,
+                                                                                li: ({ node, ...props }) => <li className="mb-1 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
                                                                                 blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-4 italic bg-white/5 rounded-r" {...props} />,
                                                                                 hr: ({ node, ...props }) => <hr className="my-6 border-t-2 border-white/60" {...props} />,
                                                                                 pre: ({ children }) => <>{children}</>,
@@ -480,7 +480,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                                                     };
 
                                                                                     return isBlock ? (
-                                                                                        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm">
+                                                                                        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
                                                                                             <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
                                                                                                 <span>{isMatch ? isMatch[1] : 'code'}</span>
                                                                                                 <button onClick={handleCopy} className="hover:text-white transition-colors">
@@ -568,7 +568,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                         id={`message-${index}`}
                         key={index}
                         ref={(el) => { messageRefs.current[index] = el; }}
-                        className="flex flex-col group transition-all"
+                        className="flex flex-col group transition-all min-w-0 overflow-hidden"
                         style={{
                             animation: (selectedMessageIndex === index && shouldShake) ? 'shake 0.5s ease-in-out' : 'none'
                         }}
@@ -594,7 +594,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                             )}
                         </div>
 
-                        <div className="flex flex-col items-start w-full">
+                        <div className="flex flex-col items-start w-full min-w-0 overflow-hidden">
                             <div className={`w-full px-0 py-2 transition-all ${msg.role === 'user' ? 'bg-white/5 rounded-lg px-4 py-3 backdrop-blur-sm' : ''}`}>
                                 {editingIndex === index ? (
                                     <div className="flex flex-col gap-3 w-full backdrop-blur-xl bg-black/30 border border-white/10 shadow-2xl rounded-2xl p-4 transition-all">
@@ -642,7 +642,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                 <div className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                             </div>
                                         ) : (
-                                            <div className={`leading-normal text-left ${msg.role === 'user' ? 'text-cyan-100' : 'text-gray-300'}`}>
+                                            <div className={`leading-normal text-left break-words ${msg.role === 'user' ? 'text-cyan-100' : 'text-gray-300'}`} style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                                                 {(() => {
                                                     const { processedContent, thinkBlocks } = preprocessContent(msg.content);
                                                     const parts = processedContent.split(/(__THINK_BLOCK_\d+__)/);
@@ -661,13 +661,13 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                                         key={`md-${i}`}
                                                                         remarkPlugins={[remarkGfm]}
                                                                         components={{
-                                                    p: ({ node, ...props }) => <p className="my-2" {...props} />,
-                                                    h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-3" {...props} />,
-                                                    h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3" {...props} />,
-                                                    h3: ({ node, ...props }) => <h3 className="text-lg font-semibold my-3" {...props} />,
-                                                    ul: ({ node, ...props }) => <ul className="list-disc pl-4 ml-2 my-3" {...props} />,
-                                                    ol: ({ node, ...props }) => <ol className="list-decimal pl-4 ml-2 my-3" {...props} />,
-                                                    li: ({ node, ...props }) => <li className="my-1" {...props} />,
+                                                    p: ({ node, ...props }) => <p className="my-2 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+                                                    h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+                                                    h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+                                                    h3: ({ node, ...props }) => <h3 className="text-lg font-semibold my-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+                                                    ul: ({ node, ...props }) => <ul className="list-disc pl-4 ml-2 my-3 break-words" {...props} />,
+                                                    ol: ({ node, ...props }) => <ol className="list-decimal pl-4 ml-2 my-3 break-words" {...props} />,
+                                                    li: ({ node, ...props }) => <li className="my-1 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
                                                     blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-4 italic bg-white/5 rounded-r" {...props} />,
                                                     hr: ({ node, ...props }) => <hr className="my-6 border-t-2 border-white/60" {...props} />,
                                                     pre: ({ children }) => <>{children}</>,
@@ -695,7 +695,7 @@ export function MessageList({ messages, isLoading, onRetry, onEdit, displayMode 
                                                         };
 
                                                         return isBlock ? (
-                                                            <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm">
+                                                            <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
                                                                 <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
                                                                     <span>{isMatch ? isMatch[1] : 'code'}</span>
                                                                     <button onClick={handleCopy} className="hover:text-white transition-colors">
