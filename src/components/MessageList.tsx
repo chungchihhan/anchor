@@ -567,6 +567,8 @@ export const MessageList = memo(function MessageList({
   const targetScrollRef = useRef<number | null>(null);
   const hasUserScrolledDuringStreamRef = useRef(false);
   const isStreamingRef = useRef(false);
+  const isInitialLoadRef = useRef(true);
+  const wasAtBottomBeforeNewMessageRef = useRef(true);
 
   const handleCopyMessage = useCallback((content: string, index: number) => {
     navigator.clipboard.writeText(content);
@@ -778,6 +780,19 @@ export const MessageList = memo(function MessageList({
     const secondLastMessage =
       messages.length > 1 ? messages[messages.length - 2] : null;
 
+    // Check if this is a chat history load (many messages added at once)
+    const isChatHistoryLoad = messages.length > prevMessagesLengthRef.current + 5;
+
+    // Check if user is currently at or near bottom before processing
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const isNearBottom = distanceFromBottom < 50;
+
+    // Store whether we were at bottom before this update
+    if (prevMessagesLengthRef.current > 0 && !hasNewMessage) {
+      wasAtBottomBeforeNewMessageRef.current = isNearBottom;
+    }
+
     const newUserPrompt =
       hasNewMessage &&
       (lastMessage?.role === "user" ||
@@ -797,7 +812,7 @@ export const MessageList = memo(function MessageList({
     // Consider it streaming if loading and there's assistant content (even empty string during initial load)
     isStreamingRef.current = isLoading && lastMessage?.role === "assistant";
 
-    const scrollToBottom = () => {
+    const scrollToBottom = (instant = false) => {
       // Don't scroll if user has manually scrolled during this stream
       if (hasUserScrolledDuringStreamRef.current && isStreaming) {
         return;
@@ -808,6 +823,14 @@ export const MessageList = memo(function MessageList({
       // Clear any pending setTimeout-based scroll
       if (scrollDebounceRef.current) {
         clearTimeout(scrollDebounceRef.current);
+      }
+
+      // Instant scroll for new user messages when not at bottom
+      if (instant) {
+        container.scrollTop = container.scrollHeight - container.clientHeight;
+        lastScrollTopRef.current = container.scrollTop;
+        isAutoScrollingRef.current = false;
+        return;
       }
 
       // For streaming content, use continuous RAF-based smooth scrolling
@@ -831,8 +854,28 @@ export const MessageList = memo(function MessageList({
       }
     };
 
-    if (newUserPrompt || loadingStarted) {
+    // Skip auto-scroll for chat history loads - stay at top
+    if (isChatHistoryLoad) {
+      // Reset tracking after history load
+      prevMessagesLengthRef.current = messages.length;
+      lastContentLengthRef.current = currentContentLength;
+      isInitialLoadRef.current = false;
+      return;
+    }
+
+    // When user sends a new message
+    if (newUserPrompt) {
       // Reset the flag when new message starts
+      hasUserScrolledDuringStreamRef.current = false;
+      shouldAutoScrollRef.current = true;
+
+      // Instant jump if user wasn't at bottom before sending
+      if (!wasAtBottomBeforeNewMessageRef.current) {
+        scrollToBottom(true);
+      } else {
+        scrollToBottom();
+      }
+    } else if (loadingStarted) {
       hasUserScrolledDuringStreamRef.current = false;
       shouldAutoScrollRef.current = true;
       scrollToBottom();
@@ -855,6 +898,7 @@ export const MessageList = memo(function MessageList({
     lastContentLengthRef.current = currentContentLength;
     prevMessagesLengthRef.current = messages.length;
     prevIsLoadingRef.current = isLoading;
+    isInitialLoadRef.current = false;
 
     // Cleanup
     return () => {
