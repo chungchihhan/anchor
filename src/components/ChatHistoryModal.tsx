@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, memo, useMemo, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -14,7 +14,7 @@ interface ChatHistoryModalProps {
     onDelete?: (id: string) => void;
 }
 
-const TableBlock = ({ node, className, children, ...props }: any) => {
+const TableBlock = memo(({ node, className, children, ...props }: any) => {
     return (
         <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
             <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
@@ -30,9 +30,10 @@ const TableBlock = ({ node, className, children, ...props }: any) => {
             </div>
         </div>
     );
-};
+});
+TableBlock.displayName = 'TableBlock';
 
-const ThinkBlock = ({ children }: { children: string }) => {
+const ThinkBlock = memo(({ children }: { children: string }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
@@ -58,7 +59,64 @@ const ThinkBlock = ({ children }: { children: string }) => {
             )}
         </div>
     );
-};
+});
+ThinkBlock.displayName = 'ThinkBlock';
+
+// Memoized code block component
+const CodeBlock = memo(({ inline, className, children, ...props }: any) => {
+    const isMatch = /language-(\w+)/.exec(className || '');
+    const hasNewLine = String(children).replace(/\n$/, '').includes('\n');
+    const isBlock = isMatch || hasNewLine;
+    const [copied, setCopied] = useState(false);
+    const codeContent = String(children).replace(/\n$/, '');
+
+    const handleCopy = useCallback(() => {
+        navigator.clipboard.writeText(codeContent);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    }, [codeContent]);
+
+    if (!isBlock) {
+        return (
+            <code {...props} className={`${className} bg-white/10 rounded px-1.5 py-0.5 text-red-200`}>
+                {children}
+            </code>
+        );
+    }
+
+    return (
+        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
+                <span>{isMatch ? isMatch[1] : 'code'}</span>
+                <button onClick={handleCopy} className="hover:text-white transition-colors">
+                    {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                </button>
+            </div>
+            <div className="overflow-x-auto">
+                <SyntaxHighlighter
+                    {...props}
+                    style={oneDark}
+                    language={isMatch ? isMatch[1] : 'text'}
+                    PreTag="div"
+                    wrapLongLines={false}
+                    codeTagProps={{ style: { backgroundColor: 'transparent', whiteSpace: 'pre' } }}
+                    customStyle={{
+                        margin: 0,
+                        padding: '1rem',
+                        background: 'transparent',
+                        lineHeight: '1.5',
+                        fontSize: '0.875rem',
+                        whiteSpace: 'pre',
+                        overflowX: 'auto'
+                    }}
+                >
+                    {codeContent}
+                </SyntaxHighlighter>
+            </div>
+        </div>
+    );
+});
+CodeBlock.displayName = 'CodeBlock';
 
 // Preprocess content to handle <think> tags
 const preprocessContent = (content: any): { processedContent: string; thinkBlocks: string[] } => {
@@ -98,6 +156,123 @@ const preprocessContent = (content: any): { processedContent: string; thinkBlock
     return { processedContent, thinkBlocks };
 };
 
+// Memoized markdown components
+const markdownComponents = {
+    p: ({ node, ...props }: any) => <p className="my-2 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+    h1: ({ node, ...props }: any) => <h1 className="text-2xl font-bold mb-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+    h2: ({ node, ...props }: any) => <h2 className="text-xl font-bold my-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+    h3: ({ node, ...props }: any) => <h3 className="text-lg font-semibold my-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+    ul: ({ node, ...props }: any) => <ul className="list-disc pl-4 ml-2 my-3 break-words" {...props} />,
+    ol: ({ node, ...props }: any) => <ol className="list-decimal pl-4 ml-2 my-3 break-words" {...props} />,
+    li: ({ node, ...props }: any) => <li className="my-1 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+    blockquote: ({ node, ...props }: any) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-4 italic bg-white/5 rounded-r" {...props} />,
+    hr: ({ node, ...props }: any) => <hr className="my-6 border-t-2 border-white/60" {...props} />,
+    pre: ({ children }: any) => <>{children}</>,
+    table: TableBlock,
+    thead: ({ node, ...props }: any) => <thead className="bg-white/5 text-xs uppercase font-medium text-white/60" {...props} />,
+    tbody: ({ node, ...props }: any) => <tbody className="text-gray-300" {...props} />,
+    tr: ({ node, ...props }: any) => <tr className="" {...props} />,
+    th: ({ node, ...props }: any) => <th className="px-4 py-2 font-medium first:rounded-tl-md last:rounded-tr-md border-b border-white/5" {...props} />,
+    td: ({ node, ...props }: any) => <td className="px-4 py-2 border border-white/5 first:rounded-bl-md last:rounded-br-md" {...props} />,
+    code: CodeBlock
+};
+
+// Memoized message preview component
+const MessagePreview = memo(({ msg, idx, onCopyMessage, msgsCopied }: {
+    msg: any;
+    idx: number;
+    onCopyMessage: (content: string, index: number) => void;
+    msgsCopied: number | null;
+}) => {
+    const { processedContent, thinkBlocks } = useMemo(() => preprocessContent(msg.content), [msg.content]);
+    const parts = useMemo(() => processedContent.split(/(__THINK_BLOCK_\d+__)/), [processedContent]);
+
+    return (
+        <div className="flex flex-col w-full max-w-full min-w-0">
+            {/* Avatar and name on top */}
+            <div className="flex items-center gap-2 mb-2">
+                {msg.role === 'assistant' ? (
+                    <>
+                        <img
+                            src="/anchor-avatar.png"
+                            alt="Anchor"
+                            className="w-6 h-6 rounded-full flex-shrink-0"
+                        />
+                        <span className="text-sm text-white/60 font-medium">Anchor</span>
+                    </>
+                ) : (
+                    <>
+                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                            <User size={16} className="text-white" />
+                        </div>
+                        <span className="text-sm text-white/60 font-medium">You</span>
+                    </>
+                )}
+            </div>
+
+            <div className={`w-full px-0 py-2 transition-all overflow-hidden ${msg.role === 'user' ? 'bg-white/5 rounded-lg px-4 py-3 backdrop-blur-sm' : ''}`}>
+                <div className={`leading-normal text-left break-words overflow-wrap-anywhere ${msg.role === 'user' ? 'text-cyan-100' : 'text-gray-300'}`}
+                     style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                    {parts.map((part, i) => {
+                        const thinkMatch = part.match(/__THINK_BLOCK_(\d+)__/);
+                        if (thinkMatch) {
+                            const blockIndex = parseInt(thinkMatch[1]);
+                            return <ThinkBlock key={`think-${i}`}>{thinkBlocks[blockIndex]}</ThinkBlock>;
+                        }
+                        if (!part.trim()) return null;
+                        return (
+                            <ReactMarkdown
+                                key={`md-${i}`}
+                                remarkPlugins={[remarkGfm]}
+                                components={markdownComponents}
+                            >
+                                {part}
+                            </ReactMarkdown>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Meta and Actions */}
+            <div className="flex items-center gap-2 mt-1.5">
+                {msg.timestamp && (
+                    <span className="text-[10px] text-white/30 font-mono">
+                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                )}
+
+                {msg.role === 'assistant' && msg.content !== '' && (
+                    <>
+                        <button
+                            onClick={() => onCopyMessage(msg.content, idx)}
+                            className="text-white/30 hover:text-white transition-colors p-1"
+                            title="Copy Message"
+                        >
+                            {msgsCopied === idx ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                        </button>
+                        {msg.model && (
+                            <span className="text-xs text-white/40 font-mono py-0.5 rounded-md">
+                                {msg.model}
+                            </span>
+                        )}
+                    </>
+                )}
+
+                {msg.role === 'user' && (
+                    <button
+                        onClick={() => onCopyMessage(msg.content, idx)}
+                        className="text-white/30 hover:text-white transition-colors p-1"
+                        title="Copy Message"
+                    >
+                        {msgsCopied === idx ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+});
+MessagePreview.displayName = 'MessagePreview';
+
 export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete }: ChatHistoryModalProps) {
     const [highlightedIndex, setHighlightedIndex] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
@@ -105,11 +280,11 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [msgsCopied, setMsgsCopied] = useState<number | null>(null);
 
-    const handleCopyMessage = (content: string, index: number) => {
+    const handleCopyMessage = useCallback((content: string, index: number) => {
         navigator.clipboard.writeText(content);
         setMsgsCopied(index);
         setTimeout(() => setMsgsCopied(null), 2000);
-    };
+    }, []);
 
     // Reset deleting state when modal closes or search changes
     useEffect(() => {
@@ -118,9 +293,12 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
         }
     }, [isOpen, searchQuery]);
 
-    // Filter sessions
-    const filteredSessions = sessions.filter(session =>
-        (session.title || 'Untitled').toLowerCase().includes(searchQuery.toLowerCase())
+    // Filter sessions with memoization
+    const filteredSessions = useMemo(() =>
+        sessions.filter(session =>
+            (session.title || 'Untitled').toLowerCase().includes(searchQuery.toLowerCase())
+        ),
+        [sessions, searchQuery]
     );
 
     // Reset highlight when modal opens
@@ -135,13 +313,13 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!isOpen) return;
 
-            // Navigation
+            // Navigation - stop at boundaries (no circular wrap)
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                setHighlightedIndex(prev => (prev + 1) % (filteredSessions.length || 1));
+                setHighlightedIndex(prev => Math.min(prev + 1, filteredSessions.length - 1));
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                setHighlightedIndex(prev => (prev - 1 + (filteredSessions.length || 1)) % (filteredSessions.length || 1));
+                setHighlightedIndex(prev => Math.max(prev - 1, 0));
             }
             // Action
             else if (e.key === 'Enter') {
@@ -170,23 +348,60 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
         if (listRef.current && isOpen) {
             const element = listRef.current.children[highlightedIndex] as HTMLElement;
             if (element) {
-                element.scrollIntoView({ block: 'nearest' });
+                const container = listRef.current;
+                const elementTop = element.offsetTop;
+                const elementBottom = elementTop + element.offsetHeight;
+                const containerTop = container.scrollTop;
+                const containerBottom = containerTop + container.clientHeight;
+
+                // Only scroll if element is not fully visible
+                if (elementTop < containerTop) {
+                    element.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                } else if (elementBottom > containerBottom) {
+                    element.scrollIntoView({ block: 'end', behavior: 'smooth' });
+                }
             }
         }
     }, [highlightedIndex, isOpen, filteredSessions]);
 
-    // Scroll to top when switching between chats
+    // Smart scroll behavior for preview container
     const previewContainerRef = useRef<HTMLDivElement>(null);
-    const prevHighlightedIndexRef = useRef<number | null>(null);
+    const prevSelectedSessionIdRef = useRef<string | null>(null);
+    const currentScrollPositionRef = useRef<number>(0);
 
     useEffect(() => {
-        if (prevHighlightedIndexRef.current !== null &&
-            prevHighlightedIndexRef.current !== highlightedIndex &&
+        const currentSessionId = filteredSessions[highlightedIndex]?.id || null;
+
+        // Only reset scroll when actually switching to a different chat session
+        if (prevSelectedSessionIdRef.current !== null &&
+            prevSelectedSessionIdRef.current !== currentSessionId &&
             previewContainerRef.current) {
-            previewContainerRef.current.scrollTop = 0;
+            // Save current scroll position before switching
+            if (prevSelectedSessionIdRef.current === filteredSessions[highlightedIndex - 1]?.id ||
+                prevSelectedSessionIdRef.current === filteredSessions[highlightedIndex + 1]?.id) {
+                // If just navigating up/down by one, maintain scroll position
+                previewContainerRef.current.scrollTop = currentScrollPositionRef.current;
+            } else {
+                // If jumping to a different session, scroll to top
+                previewContainerRef.current.scrollTop = 0;
+            }
         }
-        prevHighlightedIndexRef.current = highlightedIndex;
-    }, [highlightedIndex]);
+
+        prevSelectedSessionIdRef.current = currentSessionId;
+    }, [highlightedIndex, filteredSessions]);
+
+    // Track scroll position
+    useEffect(() => {
+        const container = previewContainerRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            currentScrollPositionRef.current = container.scrollTop;
+        };
+
+        container.addEventListener('scroll', handleScroll);
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, []);
 
     if (!isOpen) return null;
 
@@ -299,161 +514,13 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                 </div>
                                 <div ref={previewContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-8 custom-scrollbar relative" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)' }}>
                                     {selectedSession.messages.map((msg, idx) => (
-                                        <div key={idx} className="flex flex-col w-full max-w-full min-w-0">
-                                            {/* Avatar and name on top */}
-                                            <div className="flex items-center gap-2 mb-2">
-                                                {msg.role === 'assistant' ? (
-                                                    <>
-                                                        <img
-                                                            src="/anchor-avatar.png"
-                                                            alt="Anchor"
-                                                            className="w-6 h-6 rounded-full flex-shrink-0"
-                                                        />
-                                                        <span className="text-sm text-white/60 font-medium">Anchor</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                                                            <User size={16} className="text-white" />
-                                                        </div>
-                                                        <span className="text-sm text-white/60 font-medium">You</span>
-                                                    </>
-                                                )}
-                                            </div>
-
-                                            <div className={`w-full px-0 py-2 transition-all overflow-hidden ${msg.role === 'user' ? 'bg-white/5 rounded-lg px-4 py-3 backdrop-blur-sm' : ''}`}>
-                                                <div className={`leading-normal text-left break-words overflow-wrap-anywhere ${msg.role === 'user' ? 'text-cyan-100' : 'text-gray-300'}`} style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
-                                                    {(() => {
-                                                        const { processedContent, thinkBlocks } = preprocessContent(msg.content);
-                                                        const parts = processedContent.split(/(__THINK_BLOCK_\d+__)/);
-
-                                                        return (
-                                                            <>
-                                                                {parts.map((part, i) => {
-                                                                    const thinkMatch = part.match(/__THINK_BLOCK_(\d+)__/);
-                                                                    if (thinkMatch) {
-                                                                        const blockIndex = parseInt(thinkMatch[1]);
-                                                                        return <ThinkBlock key={`think-${i}`}>{thinkBlocks[blockIndex]}</ThinkBlock>;
-                                                                    }
-                                                                    if (!part.trim()) return null;
-                                                                    return (
-                                                                        <ReactMarkdown
-                                                                            key={`md-${i}`}
-                                                                            remarkPlugins={[remarkGfm]}
-                                                                            components={{
-                                                                                p: ({ node, ...props }) => <p className="my-2 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
-                                                                                h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
-                                                                                h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
-                                                                                h3: ({ node, ...props }) => <h3 className="text-lg font-semibold my-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
-                                                                                ul: ({ node, ...props }) => <ul className="list-disc pl-4 ml-2 my-3 break-words" {...props} />,
-                                                                                ol: ({ node, ...props }) => <ol className="list-decimal pl-4 ml-2 my-3 break-words" {...props} />,
-                                                                                li: ({ node, ...props }) => <li className="my-1 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
-                                                                                blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-4 italic bg-white/5 rounded-r" {...props} />,
-                                                                                hr: ({ node, ...props }) => <hr className="my-6 border-t-2 border-white/60" {...props} />,
-                                                                                pre: ({ children }) => <>{children}</>,
-                                                                                table: TableBlock,
-                                                                                thead: ({ node, ...props }) => <thead className="bg-white/5 text-xs uppercase font-medium text-white/60" {...props} />,
-                                                                                tbody: ({ node, ...props }) => <tbody className="text-gray-300" {...props} />,
-                                                                                tr: ({ node, ...props }) => <tr className="" {...props} />,
-                                                                                th: ({ node, ...props }) => <th className="px-4 py-2 font-medium first:rounded-tl-md last:rounded-tr-md border-b border-white/5" {...props} />,
-                                                                                td: ({ node, ...props }) => <td className="px-4 py-2 border border-white/5 first:rounded-bl-md last:rounded-br-md" {...props} />,
-                                                                                code({ node, inline, className, children, ...props }: any) {
-                                                                                    const isMatch = /language-(\w+)/.exec(className || '');
-                                                                                    const hasNewLine = String(children).replace(/\n$/, '').includes('\n');
-                                                                                    const isBlock = isMatch || hasNewLine;
-                                                                                    const [copied, setCopied] = useState(false);
-                                                                                    const codeContent = String(children).replace(/\n$/, '');
-
-                                                                                    const handleCopy = () => {
-                                                                                        navigator.clipboard.writeText(codeContent);
-                                                                                        setCopied(true);
-                                                                                        setTimeout(() => setCopied(false), 2000);
-                                                                                    };
-
-                                                                                    return isBlock ? (
-                                                                                        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
-                                                                                            <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
-                                                                                                <span>{isMatch ? isMatch[1] : 'code'}</span>
-                                                                                                <button onClick={handleCopy} className="hover:text-white transition-colors">
-                                                                                                    {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
-                                                                                                </button>
-                                                                                            </div>
-                                                                                            <div className="overflow-x-auto">
-                                                                                                <SyntaxHighlighter
-                                                                                                    {...props}
-                                                                                                    style={oneDark}
-                                                                                                    language={isMatch ? isMatch[1] : 'text'}
-                                                                                                    PreTag="div"
-                                                                                                    wrapLongLines={false}
-                                                                                                    codeTagProps={{ style: { backgroundColor: 'transparent', whiteSpace: 'pre' } }}
-                                                                                                    customStyle={{
-                                                                                                        margin: 0,
-                                                                                                        padding: '1rem',
-                                                                                                        background: 'transparent',
-                                                                                                        lineHeight: '1.5',
-                                                                                                        fontSize: '0.875rem',
-                                                                                                        whiteSpace: 'pre',
-                                                                                                        overflowX: 'auto'
-                                                                                                    }}
-                                                                                                >
-                                                                                                    {codeContent}
-                                                                                                </SyntaxHighlighter>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    ) : (
-                                                                                        <code {...props} className={`${className} bg-white/10 rounded px-1.5 py-0.5 text-red-200`}>
-                                                                                            {children}
-                                                                                        </code>
-                                                                                    );
-                                                                                },
-                                                                            }}
-                                                                        >
-                                                                            {part}
-                                                                        </ReactMarkdown>
-                                                                    );
-                                                                })}
-                                                            </>
-                                                        );
-                                                    })()}
-                                                </div>
-                                            </div>
-
-                                            {/* Meta and Actions */}
-                                            <div className="flex items-center gap-2 mt-1.5">
-                                                {msg.timestamp && (
-                                                    <span className="text-[10px] text-white/30 font-mono">
-                                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                )}
-
-                                                {msg.role === 'assistant' && msg.content !== '' && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => handleCopyMessage(msg.content, idx)}
-                                                            className="text-white/30 hover:text-white transition-colors p-1"
-                                                            title="Copy Message"
-                                                        >
-                                                            {msgsCopied === idx ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
-                                                        </button>
-                                                        {msg.model && (
-                                                            <span className="text-xs text-white/40 font-mono py-0.5 rounded-md">
-                                                                {msg.model}
-                                                            </span>
-                                                        )}
-                                                    </>
-                                                )}
-
-                                                {msg.role === 'user' && (
-                                                    <button
-                                                        onClick={() => handleCopyMessage(msg.content, idx)}
-                                                        className="text-white/30 hover:text-white transition-colors p-1"
-                                                        title="Copy Message"
-                                                    >
-                                                        {msgsCopied === idx ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
+                                        <MessagePreview
+                                            key={idx}
+                                            msg={msg}
+                                            idx={idx}
+                                            onCopyMessage={handleCopyMessage}
+                                            msgsCopied={msgsCopied}
+                                        />
                                     ))}
                                 </div>
                                 {/* Gradient Overlay at bottom */}
