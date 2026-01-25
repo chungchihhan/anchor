@@ -565,6 +565,8 @@ export const MessageList = memo(function MessageList({
   const lastContentLengthRef = useRef(0);
   const rafIdRef = useRef<number | null>(null);
   const targetScrollRef = useRef<number | null>(null);
+  const hasUserScrolledDuringStreamRef = useRef(false);
+  const isStreamingRef = useRef(false);
 
   const handleCopyMessage = useCallback((content: string, index: number) => {
     navigator.clipboard.writeText(content);
@@ -626,26 +628,84 @@ export const MessageList = memo(function MessageList({
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
 
-      if (!isAutoScrollingRef.current) {
-        if (scrollTop < lastScrollTopRef.current) {
-          shouldAutoScrollRef.current = false;
-        } else {
-          const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-          // Enable auto-scroll if user scrolls near bottom (within 50px)
-          if (distanceFromBottom < 50) {
-            shouldAutoScrollRef.current = true;
-          }
+      // If this scroll event was triggered by our auto-scroll, ignore it
+      if (isAutoScrollingRef.current) {
+        isAutoScrollingRef.current = false;
+        lastScrollTopRef.current = scrollTop;
+        return;
+      }
+
+      // This is a user-initiated scroll
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+      // If user scrolled away from bottom (even slightly during streaming)
+      if (distanceFromBottom > (isStreamingRef.current ? 20 : 100)) {
+        shouldAutoScrollRef.current = false;
+        // Mark that user has scrolled during this streaming session
+        if (isStreamingRef.current) {
+          hasUserScrolledDuringStreamRef.current = true;
         }
+        // Cancel any running animation immediately and forcefully
+        if (rafIdRef.current) {
+          cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+          isAutoScrollingRef.current = false;
+        }
+      } else if (distanceFromBottom < 10) {
+        // User is very close to bottom, re-enable auto-scroll
+        shouldAutoScrollRef.current = true;
+        hasUserScrolledDuringStreamRef.current = false;
       }
 
       lastScrollTopRef.current = scrollTop;
-      isAutoScrollingRef.current = false;
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      // If user scrolls up during streaming, immediately stop auto-scroll
+      if (e.deltaY < 0 && isStreamingRef.current) {
+        hasUserScrolledDuringStreamRef.current = true;
+        shouldAutoScrollRef.current = false;
+        // Cancel animation immediately
+        if (rafIdRef.current) {
+          cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+          isAutoScrollingRef.current = false;
+        }
+      }
+    };
+
+    let touchStartY = 0;
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const touchY = e.touches[0].clientY;
+      const deltaY = touchStartY - touchY;
+
+      // If user swipes down (scrolls up) during streaming
+      if (deltaY < -10 && isStreamingRef.current) {
+        hasUserScrolledDuringStreamRef.current = true;
+        shouldAutoScrollRef.current = false;
+        // Cancel animation immediately
+        if (rafIdRef.current) {
+          cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+          isAutoScrollingRef.current = false;
+        }
+      }
     };
 
     container.addEventListener("scroll", handleScroll, { passive: true });
+    container.addEventListener("wheel", handleWheel, { passive: true });
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchmove", handleTouchMove, { passive: true });
 
     return () => {
       container.removeEventListener("scroll", handleScroll);
+      container.removeEventListener("wheel", handleWheel);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
     };
   }, []);
 
@@ -661,8 +721,10 @@ export const MessageList = memo(function MessageList({
       }
 
       const animate = () => {
-        if (!container || !shouldAutoScrollRef.current) {
+        // Stop animation if user has scrolled away or has scrolled during streaming
+        if (!container || !shouldAutoScrollRef.current || (isStreamingMode && hasUserScrolledDuringStreamRef.current)) {
           rafIdRef.current = null;
+          isAutoScrollingRef.current = false;
           return;
         }
 
@@ -682,17 +744,17 @@ export const MessageList = memo(function MessageList({
 
         // Stop when we're close enough (within 0.5px for precision)
         if (Math.abs(distance) > 0.5) {
+          isAutoScrollingRef.current = true;
           container.scrollTop = currentPosition + step;
           lastScrollTopRef.current = container.scrollTop;
-          isAutoScrollingRef.current = true;
           rafIdRef.current = requestAnimationFrame(animate);
         } else {
           // Snap to final position
           container.scrollTop = targetPosition;
           lastScrollTopRef.current = targetPosition;
 
-          // For streaming, keep the animation loop running
-          if (isStreamingMode && isLoading) {
+          // For streaming, keep the animation loop running only if still auto-scrolling and user hasn't scrolled
+          if (isStreamingMode && isLoading && shouldAutoScrollRef.current && !hasUserScrolledDuringStreamRef.current) {
             rafIdRef.current = requestAnimationFrame(animate);
           } else {
             rafIdRef.current = null;
@@ -731,7 +793,16 @@ export const MessageList = memo(function MessageList({
       lastMessage?.role === "assistant" &&
       currentContentLength > lastContentLengthRef.current;
 
+    // Store streaming state for scroll handler to access
+    // Consider it streaming if loading and there's assistant content (even empty string during initial load)
+    isStreamingRef.current = isLoading && lastMessage?.role === "assistant";
+
     const scrollToBottom = () => {
+      // Don't scroll if user has manually scrolled during this stream
+      if (hasUserScrolledDuringStreamRef.current && isStreaming) {
+        return;
+      }
+
       isAutoScrollingRef.current = true;
 
       // Clear any pending setTimeout-based scroll
@@ -745,7 +816,7 @@ export const MessageList = memo(function MessageList({
         targetScrollRef.current = container.scrollHeight;
 
         // Start smooth scrolling with streaming mode for faster updates
-        if (!rafIdRef.current) {
+        if (!rafIdRef.current && !hasUserScrolledDuringStreamRef.current) {
           smoothScrollToBottom(true);
         }
       } else {
@@ -761,14 +832,24 @@ export const MessageList = memo(function MessageList({
     };
 
     if (newUserPrompt || loadingStarted) {
+      // Reset the flag when new message starts
+      hasUserScrolledDuringStreamRef.current = false;
       shouldAutoScrollRef.current = true;
       scrollToBottom();
     } else if (isStreaming && shouldAutoScrollRef.current) {
-      // Continuously update scroll during streaming
-      scrollToBottom();
+      // Only continue scrolling during streaming if user hasn't scrolled
+      if (!hasUserScrolledDuringStreamRef.current) {
+        scrollToBottom();
+      }
     } else if (shouldAutoScrollRef.current && !isStreaming && hasNewMessage) {
       // Scroll for new complete messages
+      hasUserScrolledDuringStreamRef.current = false;
       scrollToBottom();
+    }
+
+    // Reset scroll flag when streaming ends
+    if (!isLoading && prevIsLoadingRef.current) {
+      hasUserScrolledDuringStreamRef.current = false;
     }
 
     lastContentLengthRef.current = currentContentLength;
@@ -785,7 +866,7 @@ export const MessageList = memo(function MessageList({
         rafIdRef.current = null;
       }
     };
-  }, [messages, isLoading, editingIndex]);
+  }, [messages, isLoading, editingIndex, smoothScrollToBottom]);
 
   // Process messages for columns mode
   const messageRows = useMemo(() => {
