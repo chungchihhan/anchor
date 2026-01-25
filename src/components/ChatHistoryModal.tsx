@@ -384,9 +384,17 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                                                                                     style={oneDark}
                                                                                                     language={isMatch ? isMatch[1] : 'text'}
                                                                                                     PreTag="div"
-                                                                                                    wrapLongLines={true}
-                                                                                                    codeTagProps={{ style: { backgroundColor: 'transparent' } }}
-                                                                                                    customStyle={{ margin: 0, padding: '1rem', background: 'transparent', lineHeight: '1.5' }}
+                                                                                                    wrapLongLines={false}
+                                                                                                    codeTagProps={{ style: { backgroundColor: 'transparent', whiteSpace: 'pre' } }}
+                                                                                                    customStyle={{
+                                                                                                        margin: 0,
+                                                                                                        padding: '1rem',
+                                                                                                        background: 'transparent',
+                                                                                                        lineHeight: '1.5',
+                                                                                                        fontSize: '0.875rem',
+                                                                                                        whiteSpace: 'pre',
+                                                                                                        overflowX: 'auto'
+                                                                                                    }}
                                                                                                 >
                                                                                                     {codeContent}
                                                                                                 </SyntaxHighlighter>
