@@ -279,6 +279,7 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
     const listRef = useRef<HTMLDivElement>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [msgsCopied, setMsgsCopied] = useState<number | null>(null);
+    const [shouldShake, setShouldShake] = useState(false);
 
     const handleCopyMessage = useCallback((content: string, index: number) => {
         navigator.clipboard.writeText(content);
@@ -313,13 +314,25 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!isOpen) return;
 
-            // Navigation - stop at boundaries (no circular wrap)
+            // Navigation - stop at boundaries (no circular wrap) with shake feedback
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                setHighlightedIndex(prev => Math.min(prev + 1, filteredSessions.length - 1));
+                if (highlightedIndex >= filteredSessions.length - 1) {
+                    // Already at bottom, trigger shake
+                    setShouldShake(true);
+                    setTimeout(() => setShouldShake(false), 500);
+                } else {
+                    setHighlightedIndex(prev => prev + 1);
+                }
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                setHighlightedIndex(prev => Math.max(prev - 1, 0));
+                if (highlightedIndex <= 0) {
+                    // Already at top, trigger shake
+                    setShouldShake(true);
+                    setTimeout(() => setShouldShake(false), 500);
+                } else {
+                    setHighlightedIndex(prev => prev - 1);
+                }
             }
             // Action
             else if (e.key === 'Enter') {
@@ -454,6 +467,9 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                             ? 'bg-white/10 border-white/5 shadow-lg'
                                             : 'hover:bg-white/5 hover:border-white/5'
                                             }`}
+                                        style={{
+                                            animation: (index === highlightedIndex && shouldShake) ? 'shake 0.5s ease-in-out' : 'none'
+                                        }}
                                         onClick={() => {
                                             onSelect(session.id);
                                             onClose();
