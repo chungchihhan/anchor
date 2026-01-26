@@ -1,9 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, memo, useMemo, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { FolderOpen, Trash2, Copy, Check } from 'lucide-react';
+import { FolderOpen, Trash2, Copy, Check, User, Anchor } from 'lucide-react';
 import { ChatSession } from '@/types';
 
 interface ChatHistoryModalProps {
@@ -14,9 +14,9 @@ interface ChatHistoryModalProps {
     onDelete?: (id: string) => void;
 }
 
-const TableBlock = ({ node, className, children, ...props }: any) => {
+const TableBlock = memo(({ node, className, children, ...props }: any) => {
     return (
-        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm">
+        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
             <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
                 <span>Table</span>
             </div>
@@ -30,9 +30,10 @@ const TableBlock = ({ node, className, children, ...props }: any) => {
             </div>
         </div>
     );
-};
+});
+TableBlock.displayName = 'TableBlock';
 
-const ThinkBlock = ({ children }: { children: string }) => {
+const ThinkBlock = memo(({ children }: { children: string }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
@@ -58,7 +59,64 @@ const ThinkBlock = ({ children }: { children: string }) => {
             )}
         </div>
     );
-};
+});
+ThinkBlock.displayName = 'ThinkBlock';
+
+// Memoized code block component
+const CodeBlock = memo(({ inline, className, children, ...props }: any) => {
+    const isMatch = /language-(\w+)/.exec(className || '');
+    const hasNewLine = String(children).replace(/\n$/, '').includes('\n');
+    const isBlock = isMatch || hasNewLine;
+    const [copied, setCopied] = useState(false);
+    const codeContent = String(children).replace(/\n$/, '');
+
+    const handleCopy = useCallback(() => {
+        navigator.clipboard.writeText(codeContent);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    }, [codeContent]);
+
+    if (!isBlock) {
+        return (
+            <code {...props} className={`${className} bg-white/10 rounded px-1.5 py-0.5 text-red-200`}>
+                {children}
+            </code>
+        );
+    }
+
+    return (
+        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
+                <span>{isMatch ? isMatch[1] : 'code'}</span>
+                <button onClick={handleCopy} className="hover:text-white transition-colors">
+                    {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                </button>
+            </div>
+            <div className="overflow-x-auto">
+                <SyntaxHighlighter
+                    {...props}
+                    style={oneDark}
+                    language={isMatch ? isMatch[1] : 'text'}
+                    PreTag="div"
+                    wrapLongLines={false}
+                    codeTagProps={{ style: { backgroundColor: 'transparent', whiteSpace: 'pre' } }}
+                    customStyle={{
+                        margin: 0,
+                        padding: '1rem',
+                        background: 'transparent',
+                        lineHeight: '1.5',
+                        fontSize: '0.875rem',
+                        whiteSpace: 'pre',
+                        overflowX: 'auto'
+                    }}
+                >
+                    {codeContent}
+                </SyntaxHighlighter>
+            </div>
+        </div>
+    );
+});
+CodeBlock.displayName = 'CodeBlock';
 
 // Preprocess content to handle <think> tags
 const preprocessContent = (content: any): { processedContent: string; thinkBlocks: string[] } => {
@@ -98,18 +156,134 @@ const preprocessContent = (content: any): { processedContent: string; thinkBlock
     return { processedContent, thinkBlocks };
 };
 
+// Memoized markdown components
+const markdownComponents = {
+    p: ({ node, ...props }: any) => <p className="my-2 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+    h1: ({ node, ...props }: any) => <h1 className="text-2xl font-bold mb-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+    h2: ({ node, ...props }: any) => <h2 className="text-xl font-bold my-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+    h3: ({ node, ...props }: any) => <h3 className="text-lg font-semibold my-3 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+    ul: ({ node, ...props }: any) => <ul className="list-disc pl-4 ml-2 my-3 break-words" {...props} />,
+    ol: ({ node, ...props }: any) => <ol className="list-decimal pl-4 ml-2 my-3 break-words" {...props} />,
+    li: ({ node, ...props }: any) => <li className="my-1 break-words" style={{ overflowWrap: 'anywhere' }} {...props} />,
+    blockquote: ({ node, ...props }: any) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-4 italic bg-white/5 rounded-r" {...props} />,
+    hr: ({ node, ...props }: any) => <hr className="my-6 border-t-2 border-white/60" {...props} />,
+    pre: ({ children }: any) => <>{children}</>,
+    table: TableBlock,
+    thead: ({ node, ...props }: any) => <thead className="bg-white/5 text-xs uppercase font-medium text-white/60" {...props} />,
+    tbody: ({ node, ...props }: any) => <tbody className="text-gray-300" {...props} />,
+    tr: ({ node, ...props }: any) => <tr className="" {...props} />,
+    th: ({ node, ...props }: any) => <th className="px-4 py-2 font-medium first:rounded-tl-md last:rounded-tr-md border-b border-white/5" {...props} />,
+    td: ({ node, ...props }: any) => <td className="px-4 py-2 border border-white/5 first:rounded-bl-md last:rounded-br-md" {...props} />,
+    code: CodeBlock
+};
+
+// Memoized message preview component
+const MessagePreview = memo(({ msg, idx, onCopyMessage, msgsCopied }: {
+    msg: any;
+    idx: number;
+    onCopyMessage: (content: string, index: number) => void;
+    msgsCopied: number | null;
+}) => {
+    const { processedContent, thinkBlocks } = useMemo(() => preprocessContent(msg.content), [msg.content]);
+    const parts = useMemo(() => processedContent.split(/(__THINK_BLOCK_\d+__)/), [processedContent]);
+
+    return (
+        <div className="flex flex-col w-full max-w-full min-w-0">
+            {/* Avatar and name on top */}
+            <div className="flex items-center gap-2 mb-2">
+                {msg.role === 'assistant' ? (
+                    <>
+                        <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                            <Anchor size={16} className="text-white" />
+                        </div>
+                        <span className="text-sm text-white/60 font-medium">Anchor</span>
+                    </>
+                ) : (
+                    <>
+                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                            <User size={16} className="text-white" />
+                        </div>
+                        <span className="text-sm text-white/60 font-medium">You</span>
+                    </>
+                )}
+            </div>
+
+            <div className={`w-full px-0 py-2 transition-all overflow-hidden ${msg.role === 'user' ? 'bg-white/5 rounded-lg px-4 py-3 backdrop-blur-sm' : ''}`}>
+                <div className={`leading-normal text-left break-words overflow-wrap-anywhere ${msg.role === 'user' ? 'text-cyan-100' : 'text-gray-300'}`}
+                     style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                    {parts.map((part, i) => {
+                        const thinkMatch = part.match(/__THINK_BLOCK_(\d+)__/);
+                        if (thinkMatch) {
+                            const blockIndex = parseInt(thinkMatch[1]);
+                            return <ThinkBlock key={`think-${i}`}>{thinkBlocks[blockIndex]}</ThinkBlock>;
+                        }
+                        if (!part.trim()) return null;
+                        return (
+                            <ReactMarkdown
+                                key={`md-${i}`}
+                                remarkPlugins={[remarkGfm]}
+                                components={markdownComponents}
+                            >
+                                {part}
+                            </ReactMarkdown>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Meta and Actions */}
+            <div className="flex items-center gap-2 mt-1.5">
+                {msg.timestamp && (
+                    <span className="text-[10px] text-white/30 font-mono">
+                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                )}
+
+                {msg.role === 'assistant' && msg.content !== '' && (
+                    <>
+                        <button
+                            onClick={() => onCopyMessage(msg.content, idx)}
+                            className="text-white/30 hover:text-white transition-colors p-1"
+                            title="Copy Message"
+                        >
+                            {msgsCopied === idx ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                        </button>
+                        {msg.model && (
+                            <span className="text-xs text-white/40 font-mono py-0.5 rounded-md">
+                                {msg.model}
+                            </span>
+                        )}
+                    </>
+                )}
+
+                {msg.role === 'user' && (
+                    <button
+                        onClick={() => onCopyMessage(msg.content, idx)}
+                        className="text-white/30 hover:text-white transition-colors p-1"
+                        title="Copy Message"
+                    >
+                        {msgsCopied === idx ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+});
+MessagePreview.displayName = 'MessagePreview';
+
 export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete }: ChatHistoryModalProps) {
     const [highlightedIndex, setHighlightedIndex] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
     const listRef = useRef<HTMLDivElement>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [msgsCopied, setMsgsCopied] = useState<number | null>(null);
+    const [shouldShake, setShouldShake] = useState(false);
 
-    const handleCopyMessage = (content: string, index: number) => {
+    const handleCopyMessage = useCallback((content: string, index: number) => {
         navigator.clipboard.writeText(content);
         setMsgsCopied(index);
         setTimeout(() => setMsgsCopied(null), 2000);
-    };
+    }, []);
 
     // Reset deleting state when modal closes or search changes
     useEffect(() => {
@@ -118,9 +292,12 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
         }
     }, [isOpen, searchQuery]);
 
-    // Filter sessions
-    const filteredSessions = sessions.filter(session =>
-        (session.title || 'Untitled').toLowerCase().includes(searchQuery.toLowerCase())
+    // Filter sessions with memoization
+    const filteredSessions = useMemo(() =>
+        sessions.filter(session =>
+            (session.title || 'Untitled').toLowerCase().includes(searchQuery.toLowerCase())
+        ),
+        [sessions, searchQuery]
     );
 
     // Reset highlight when modal opens
@@ -135,13 +312,25 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!isOpen) return;
 
-            // Navigation
+            // Navigation - stop at boundaries (no circular wrap) with shake feedback
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                setHighlightedIndex(prev => (prev + 1) % (filteredSessions.length || 1));
+                if (highlightedIndex >= filteredSessions.length - 1) {
+                    // Already at bottom, trigger shake
+                    setShouldShake(true);
+                    setTimeout(() => setShouldShake(false), 500);
+                } else {
+                    setHighlightedIndex(prev => prev + 1);
+                }
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                setHighlightedIndex(prev => (prev - 1 + (filteredSessions.length || 1)) % (filteredSessions.length || 1));
+                if (highlightedIndex <= 0) {
+                    // Already at top, trigger shake
+                    setShouldShake(true);
+                    setTimeout(() => setShouldShake(false), 500);
+                } else {
+                    setHighlightedIndex(prev => prev - 1);
+                }
             }
             // Action
             else if (e.key === 'Enter') {
@@ -170,18 +359,60 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
         if (listRef.current && isOpen) {
             const element = listRef.current.children[highlightedIndex] as HTMLElement;
             if (element) {
-                element.scrollIntoView({ block: 'nearest' });
+                const container = listRef.current;
+                const elementTop = element.offsetTop;
+                const elementBottom = elementTop + element.offsetHeight;
+                const containerTop = container.scrollTop;
+                const containerBottom = containerTop + container.clientHeight;
+
+                // Only scroll if element is not fully visible
+                if (elementTop < containerTop) {
+                    element.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                } else if (elementBottom > containerBottom) {
+                    element.scrollIntoView({ block: 'end', behavior: 'smooth' });
+                }
             }
         }
     }, [highlightedIndex, isOpen, filteredSessions]);
 
-    // Scroll preview to bottom when highlighted index changes
-    const previewEndRef = useRef<HTMLDivElement>(null);
+    // Smart scroll behavior for preview container
+    const previewContainerRef = useRef<HTMLDivElement>(null);
+    const prevSelectedSessionIdRef = useRef<string | null>(null);
+    const currentScrollPositionRef = useRef<number>(0);
+
     useEffect(() => {
-        if (previewEndRef.current) {
-            previewEndRef.current.scrollIntoView({ behavior: 'auto' });
+        const currentSessionId = filteredSessions[highlightedIndex]?.id || null;
+
+        // Only reset scroll when actually switching to a different chat session
+        if (prevSelectedSessionIdRef.current !== null &&
+            prevSelectedSessionIdRef.current !== currentSessionId &&
+            previewContainerRef.current) {
+            // Save current scroll position before switching
+            if (prevSelectedSessionIdRef.current === filteredSessions[highlightedIndex - 1]?.id ||
+                prevSelectedSessionIdRef.current === filteredSessions[highlightedIndex + 1]?.id) {
+                // If just navigating up/down by one, maintain scroll position
+                previewContainerRef.current.scrollTop = currentScrollPositionRef.current;
+            } else {
+                // If jumping to a different session, scroll to top
+                previewContainerRef.current.scrollTop = 0;
+            }
         }
+
+        prevSelectedSessionIdRef.current = currentSessionId;
     }, [highlightedIndex, filteredSessions]);
+
+    // Track scroll position
+    useEffect(() => {
+        const container = previewContainerRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            currentScrollPositionRef.current = container.scrollTop;
+        };
+
+        container.addEventListener('scroll', handleScroll);
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, []);
 
     if (!isOpen) return null;
 
@@ -205,7 +436,7 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
 
                 <div className="flex flex-1 overflow-hidden">
                     {/* Left Sidebar: Chat List */}
-                    <div className="w-1/3 border-r border-white/10 flex flex-col bg-black/20">
+                    <div className="w-1/3 border-r border-white/10 flex flex-col bg-black/20 flex-shrink-0">
                         {/* Search Bar */}
                         <div className="p-3 border-b border-white/5">
                             <input
@@ -234,6 +465,9 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                             ? 'bg-white/10 border-white/5 shadow-lg'
                                             : 'hover:bg-white/5 hover:border-white/5'
                                             }`}
+                                        style={{
+                                            animation: (index === highlightedIndex && shouldShake) ? 'shake 0.5s ease-in-out' : 'none'
+                                        }}
                                         onClick={() => {
                                             onSelect(session.id);
                                             onClose();
@@ -283,7 +517,7 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                     </div>
 
                     {/* Right Panel: Chat Preview */}
-                    <div className="flex-1 flex flex-col bg-black/40 relative">
+                    <div className="flex-1 flex flex-col bg-black/40 relative min-w-0 overflow-hidden">
                         {selectedSession ? (
                             <>
                                 <div className="p-4 bg-gradient-to-b from-black/60 to-transparent backdrop-blur-sm flex items-center justify-between">
@@ -292,138 +526,16 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                                         {selectedSession.messages.length} messages
                                     </p>
                                 </div>
-                                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar relative" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)' }}>
+                                <div ref={previewContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-8 custom-scrollbar relative" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%)' }}>
                                     {selectedSession.messages.map((msg, idx) => (
-                                        <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                            <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
-                                                ? 'bg-white/10 text-white rounded-br-sm'
-                                                : 'bg-white/5 text-gray-300 rounded-bl-sm'
-                                                }`}>
-                                                <div className={`leading-normal ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                                                    {(() => {
-                                                        const { processedContent, thinkBlocks } = preprocessContent(msg.content);
-                                                        const parts = processedContent.split(/(__THINK_BLOCK_\d+__)/);
-
-                                                        return (
-                                                            <>
-                                                                {parts.map((part, i) => {
-                                                                    const thinkMatch = part.match(/__THINK_BLOCK_(\d+)__/);
-                                                                    if (thinkMatch) {
-                                                                        const blockIndex = parseInt(thinkMatch[1]);
-                                                                        return <ThinkBlock key={`think-${i}`}>{thinkBlocks[blockIndex]}</ThinkBlock>;
-                                                                    }
-                                                                    if (!part.trim()) return null;
-                                                                    return (
-                                                                        <ReactMarkdown
-                                                                            key={`md-${i}`}
-                                                                            remarkPlugins={[remarkGfm]}
-                                                                            components={{
-                                                                                p: ({ node, ...props }) => <p className="my-2" {...props} />,
-                                                                                h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-3" {...props} />,
-                                                                                h2: ({ node, ...props }) => <h2 className="text-xl font-bold my-3" {...props} />,
-                                                                                h3: ({ node, ...props }) => <h3 className="text-lg font-semibold my-3" {...props} />,
-                                                                                ul: ({ node, ...props }) => <ul className={`list-disc mb-3 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
-                                                                                ol: ({ node, ...props }) => <ol className={`list-decimal mb-3 ${msg.role === 'user' ? 'list-inside' : 'pl-4'}`} {...props} />,
-                                                                                li: ({ node, ...props }) => <li className="mb-1" {...props} />,
-                                                                                blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-3 italic bg-white/5 rounded-r" {...props} />,
-                                                                                hr: ({ node, ...props }) => <hr className="my-6 border-t-2 border-white/20" {...props} />,
-                                                                                pre: ({ children }) => <>{children}</>,
-                                                                                table: TableBlock,
-                                                                                thead: ({ node, ...props }) => <thead className="bg-white/5 text-xs uppercase font-medium text-white/60" {...props} />,
-                                                                                tbody: ({ node, ...props }) => <tbody className="text-gray-300" {...props} />,
-                                                                                tr: ({ node, ...props }) => <tr className="" {...props} />,
-                                                                                th: ({ node, ...props }) => <th className="px-4 py-2 font-medium first:rounded-tl-md last:rounded-tr-md border-b border-white/5" {...props} />,
-                                                                                td: ({ node, ...props }) => <td className="px-4 py-2 border border-white/5 first:rounded-bl-md last:rounded-br-md" {...props} />,
-                                                                                code({ node, inline, className, children, ...props }: any) {
-                                                                                    const isMatch = /language-(\w+)/.exec(className || '');
-                                                                                    const hasNewLine = String(children).replace(/\n$/, '').includes('\n');
-                                                                                    const isBlock = isMatch || hasNewLine;
-                                                                                    const [copied, setCopied] = useState(false);
-                                                                                    const codeContent = String(children).replace(/\n$/, '');
-
-                                                                                    const handleCopy = () => {
-                                                                                        navigator.clipboard.writeText(codeContent);
-                                                                                        setCopied(true);
-                                                                                        setTimeout(() => setCopied(false), 2000);
-                                                                                    };
-
-                                                                                    return isBlock ? (
-                                                                                        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-3 bg-black/50 text-left backdrop-blur-sm">
-                                                                                            <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
-                                                                                                <span>{isMatch ? isMatch[1] : 'code'}</span>
-                                                                                                <button onClick={handleCopy} className="hover:text-white transition-colors">
-                                                                                                    {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
-                                                                                                </button>
-                                                                                            </div>
-                                                                                            <div className="overflow-x-auto">
-                                                                                                <SyntaxHighlighter
-                                                                                                    {...props}
-                                                                                                    style={oneDark}
-                                                                                                    language={isMatch ? isMatch[1] : 'text'}
-                                                                                                    PreTag="div"
-                                                                                                    wrapLongLines={true}
-                                                                                                    codeTagProps={{ style: { backgroundColor: 'transparent' } }}
-                                                                                                    customStyle={{ margin: 0, padding: '1rem', background: 'transparent', lineHeight: '1.5' }}
-                                                                                                >
-                                                                                                    {codeContent}
-                                                                                                </SyntaxHighlighter>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    ) : (
-                                                                                        <code className="bg-white/10 px-1.5 py-0.5 rounded text-cyan-300 font-mono text-xs" {...props}>
-                                                                                            {children}
-                                                                                        </code>
-                                                                                    );
-                                                                                },
-                                                                            }}
-                                                                        >
-                                                                            {part}
-                                                                        </ReactMarkdown>
-                                                                    );
-                                                                })}
-                                                            </>
-                                                        );
-                                                    })()}
-                                                </div>
-                                            </div>
-                                            {/* Meta and Actions */}
-                                            <div className={`flex items-center gap-2 mt-1.5 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                                                {msg.timestamp && (
-                                                    <span className="text-[10px] text-white/30 font-mono">
-                                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                )}
-
-                                                {msg.role === 'assistant' && msg.content !== '' && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => handleCopyMessage(msg.content, idx)}
-                                                            className="text-white/30 hover:text-white transition-colors p-1"
-                                                            title="Copy Message"
-                                                        >
-                                                            {msgsCopied === idx ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
-                                                        </button>
-                                                        {msg.model && (
-                                                            <span className="text-xs text-white/40 font-mono py-0.5 rounded-md">
-                                                                {msg.model}
-                                                            </span>
-                                                        )}
-                                                    </>
-                                                )}
-
-                                                {msg.role === 'user' && (
-                                                    <button
-                                                        onClick={() => handleCopyMessage(msg.content, idx)}
-                                                        className="text-white/30 hover:text-white transition-colors p-1"
-                                                        title="Copy Message"
-                                                    >
-                                                        {msgsCopied === idx ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
+                                        <MessagePreview
+                                            key={idx}
+                                            msg={msg}
+                                            idx={idx}
+                                            onCopyMessage={handleCopyMessage}
+                                            msgsCopied={msgsCopied}
+                                        />
                                     ))}
-                                    <div ref={previewEndRef} />
                                 </div>
                                 {/* Gradient Overlay at bottom */}
                                 <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
