@@ -16,7 +16,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const apiKeyRef = useRef<HTMLInputElement>(null);
   const compactModeRef = useRef<HTMLButtonElement>(null);
   const columnsModeRef = useRef<HTMLButtonElement>(null);
-  const inputRefs = [endpointRef, apiKeyRef, compactModeRef, columnsModeRef];
+  const chatWidthRef = useRef<HTMLInputElement>(null);
+  const fontSizeRef = useRef<HTMLInputElement>(null);
+  const inputRefs = [endpointRef, apiKeyRef, compactModeRef, columnsModeRef, chatWidthRef, fontSizeRef];
 
   useEffect(() => {
     setIsMounted(true);
@@ -27,11 +29,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       try {
         const loadedSettings = StorageService.getSettings();
         setSettings(loadedSettings);
-        
+
         // Set focus to the currently selected display mode
-        const initialFocusIndex = (loadedSettings.displayMode || 'compact') === 'compact' ? 2 : 3;
+        const initialFocusIndex =
+          (loadedSettings.displayMode || "compact") === "compact" ? 2 : 3;
         setFocusedField(initialFocusIndex);
-        
+
         // Focus the selected mode button after a short delay
         setTimeout(() => {
           inputRefs[initialFocusIndex].current?.focus();
@@ -54,11 +57,47 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   }, [settings, onClose, isMounted]);
 
+  const handleSliderChange = useCallback(
+    (field: "chatWidth" | "fontSize", value: number) => {
+      const newSettings = { ...settings, [field]: value };
+      setSettings(newSettings);
+      // Save immediately for instant preview
+      if (isMounted) {
+        try {
+          StorageService.saveSettings(newSettings);
+          // Dispatch event to notify other components
+          window.dispatchEvent(new Event("settingsChanged"));
+        } catch (error) {
+          console.error("Failed to save settings:", error);
+        }
+      }
+    },
+    [settings, isMounted]
+  );
+
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowDown") {
+      // Handle left/right arrows for sliders
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        // Check if focused on slider (indices 4 and 5)
+        if (focusedField === 4) {
+          // Chat width slider
+          e.preventDefault();
+          e.stopPropagation();
+          const delta = e.key === "ArrowRight" ? 1 : -1;
+          const newValue = Math.max(30, Math.min(100, settings.chatWidth + delta));
+          handleSliderChange("chatWidth", newValue);
+        } else if (focusedField === 5) {
+          // Font size slider
+          e.preventDefault();
+          e.stopPropagation();
+          const delta = e.key === "ArrowRight" ? 1 : -1;
+          const newValue = Math.max(12, Math.min(24, settings.fontSize + delta));
+          handleSliderChange("fontSize", newValue);
+        }
+      } else if (e.key === "ArrowDown") {
         e.preventDefault();
         e.stopPropagation();
         setFocusedField((prev) => {
@@ -87,7 +126,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [isOpen, handleSave]);
+  }, [isOpen, handleSave, focusedField, settings.chatWidth, settings.fontSize, handleSliderChange]);
 
   if (!isOpen) return null;
 
@@ -108,7 +147,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
           <div className="flex items-center gap-3">
             <div className="text-[10px] text-white/40 border border-white/10 px-1.5 py-0.5 rounded font-mono">
-              ↑↓ Navigate • Esc to save & close
+              ↑↓ Navigate • ←→ Adjust sliders • Esc to save & close
             </div>
             <button
               onClick={onClose}
@@ -162,6 +201,72 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     Prompts left, responses right
                   </div>
                 </button>
+              </div>
+            </div>
+            {/* Chat Appearance */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+                Chat Appearance
+              </h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-white/70">
+                      Chat Width
+                    </label>
+                    <span className="text-xs text-white/50 font-mono">
+                      {settings.chatWidth}%
+                    </span>
+                  </div>
+                  <input
+                    ref={chatWidthRef}
+                    type="range"
+                    min="30"
+                    max="100"
+                    value={settings.chatWidth}
+                    onChange={(e) =>
+                      handleSliderChange("chatWidth", parseInt(e.target.value))
+                    }
+                    onFocus={() => setFocusedField(4)}
+                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer slider-thumb focus:outline-none focus:ring-2 focus:ring-cyan-400/30"
+                    style={{
+                      background: `linear-gradient(to right, rgb(34 211 238 / 0.5) 0%, rgb(34 211 238 / 0.5) ${
+                        ((settings.chatWidth - 30) / 70) * 100
+                      }%, rgb(255 255 255 / 0.1) ${
+                        ((settings.chatWidth - 30) / 70) * 100
+                      }%, rgb(255 255 255 / 0.1) 100%)`,
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-white/70">
+                      Font Size
+                    </label>
+                    <span className="text-xs text-white/50 font-mono">
+                      {settings.fontSize}px
+                    </span>
+                  </div>
+                  <input
+                    ref={fontSizeRef}
+                    type="range"
+                    min="12"
+                    max="24"
+                    value={settings.fontSize}
+                    onChange={(e) =>
+                      handleSliderChange("fontSize", parseInt(e.target.value))
+                    }
+                    onFocus={() => setFocusedField(5)}
+                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer slider-thumb focus:outline-none focus:ring-2 focus:ring-cyan-400/30"
+                    style={{
+                      background: `linear-gradient(to right, rgb(34 211 238 / 0.5) 0%, rgb(34 211 238 / 0.5) ${
+                        ((settings.fontSize - 12) / 12) * 100
+                      }%, rgb(255 255 255 / 0.1) ${
+                        ((settings.fontSize - 12) / 12) * 100
+                      }%, rgb(255 255 255 / 0.1) 100%)`,
+                    }}
+                  />
+                </div>
               </div>
             </div>
             {/* General Settings */}

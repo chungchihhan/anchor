@@ -44,6 +44,8 @@ export interface AppSettings {
   modelName: string;
   shortcuts: ShortcutMap;
   displayMode: 'compact' | 'columns';
+  chatWidth: number; // percentage (30-100)
+  fontSize: number; // pixels (12-24)
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -51,6 +53,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   endpointUrl: 'https://portal.rdsec.trendmicro.com/aiendpoint/v1/chat/completions',
   modelName: 'gpt-3.5-turbo',
   displayMode: 'compact',
+  chatWidth: 70, // percentage
+  fontSize: 16, // pixels
   shortcuts: {
     'newChat': 'Cmd+N',
     'toggleModel': 'Cmd+M',

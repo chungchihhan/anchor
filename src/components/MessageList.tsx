@@ -16,6 +16,7 @@ interface MessageListProps {
   shouldShake?: boolean;
   onScrollStateChange?: (showButton: boolean) => void;
   scrollToBottomRef?: React.MutableRefObject<(() => void) | null>;
+  fontSize?: number;
 }
 
 // Memoized table block component
@@ -241,10 +242,12 @@ const MessageContent = memo(
     content,
     role,
     isStreaming = false,
+    fontSize = 16,
   }: {
     content: any;
     role: "user" | "assistant";
     isStreaming?: boolean;
+    fontSize?: number;
   }) => {
     const { processedContent, thinkBlocks } = useMemo(
       () => preprocessContent(content),
@@ -341,7 +344,11 @@ const MessageContent = memo(
     return (
       <div
         className={className}
-        style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
+        style={{
+          overflowWrap: "anywhere",
+          wordBreak: "break-word",
+          fontSize: `${fontSize}px`,
+        }}
       >
         {parts.map((part, i) => {
           const thinkMatch = part.match(/__THINK_BLOCK_(\d+)__/);
@@ -423,6 +430,7 @@ const SingleMessage = memo(
     msgsCopied,
     isLastMessage,
     displayMode,
+    fontSize = 16,
   }: any) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const isComposingRef = useRef(false);
@@ -535,6 +543,7 @@ const SingleMessage = memo(
           content={msg.content}
           role={msg.role}
           isStreaming={isStreaming}
+          fontSize={fontSize}
         />
       </div>
     );
@@ -552,6 +561,7 @@ export const MessageList = memo(function MessageList({
   shouldShake = false,
   onScrollStateChange,
   scrollToBottomRef,
+  fontSize = 16,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1025,6 +1035,7 @@ export const MessageList = memo(function MessageList({
                   msgsCopied={msgsCopied}
                   isLastMessage={false}
                   displayMode={displayMode}
+                  fontSize={fontSize}
                 />
 
                 <div className="flex items-center gap-2 mt-1.5 transition-opacity">
@@ -1095,6 +1106,7 @@ export const MessageList = memo(function MessageList({
                       msgsCopied={msgsCopied}
                       isLastMessage={row.assistantIndex === messages.length - 1}
                       displayMode={displayMode}
+                      fontSize={fontSize}
                     />
 
                     {row.assistantMsg.content !== "" && (
@@ -1231,6 +1243,7 @@ export const MessageList = memo(function MessageList({
                 msgsCopied={msgsCopied}
                 isLastMessage={index === messages.length - 1}
                 displayMode={displayMode}
+                fontSize={fontSize}
               />
             </div>
 

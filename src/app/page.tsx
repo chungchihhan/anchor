@@ -118,6 +118,17 @@ export default function Home() {
     setIsMounted(true);
   }, []);
 
+  const [settingsVersion, setSettingsVersion] = useState(0);
+
+  useEffect(() => {
+    const handleSettingsChange = () => {
+      setSettingsVersion((v) => v + 1);
+    };
+    window.addEventListener("settingsChanged", handleSettingsChange);
+    return () =>
+      window.removeEventListener("settingsChanged", handleSettingsChange);
+  }, []);
+
   const savedSettings = useMemo(() => {
     if (!isMounted) return DEFAULT_SETTINGS;
     try {
@@ -126,7 +137,7 @@ export default function Home() {
       console.error("Failed to load settings:", error);
       return DEFAULT_SETTINGS;
     }
-  }, [isSettingsOpen, isHelpOpen, isMounted]); // Re-read when settings or help close
+  }, [isSettingsOpen, isHelpOpen, isMounted, settingsVersion]); // Re-read when settings or help close
   const currentShortcuts =
     savedSettings.shortcuts || DEFAULT_SETTINGS.shortcuts;
   const displayModeRef = useRef(savedSettings.displayMode || "compact");
@@ -414,11 +425,8 @@ export default function Home() {
           </div>
         ) : (
           <>
-            {/* Constrained Width Container */}
-            {/* Constrained Width Container */}
-            <div
-              className={`flex-1 overflow-hidden flex flex-col w-full mx-auto relative ${savedSettings.displayMode === "columns" ? "max-w-7xl px-8" : "max-w-4xl"}`}
-            >
+            {/* Message Area with Dynamic Width */}
+            <div className="flex-1 overflow-hidden flex flex-col relative">
               {/* Scrollable Message Area */}
               <div
                 className="absolute inset-0 overflow-y-auto no-scrollbar scroll-smooth"
@@ -429,32 +437,42 @@ export default function Home() {
                     "linear-gradient(to bottom, transparent 0%, black 20px, black 100%)",
                 }}
               >
-                <div className="min-h-full pb-32">
-                  <MessageList
-                    messages={messages}
-                    isLoading={isLoading}
-                    onRetry={retryMessage}
-                    onEdit={editMessage}
-                    displayMode={savedSettings.displayMode || "compact"}
-                    selectedMessageIndex={selectedMessageIndex}
-                    shouldShake={shouldShake}
-                    onScrollStateChange={setShowScrollToBottom}
-                    scrollToBottomRef={scrollToBottomRef}
-                  />
+                <div className="min-h-full pb-32 flex flex-col items-center">
+                  <div
+                    className="w-full"
+                    style={{
+                      width: `${savedSettings.chatWidth || 70}%`,
+                    }}
+                  >
+                    <MessageList
+                      messages={messages}
+                      isLoading={isLoading}
+                      onRetry={retryMessage}
+                      onEdit={editMessage}
+                      displayMode={savedSettings.displayMode || "compact"}
+                      selectedMessageIndex={selectedMessageIndex}
+                      shouldShake={shouldShake}
+                      onScrollStateChange={setShowScrollToBottom}
+                      scrollToBottomRef={scrollToBottomRef}
+                      fontSize={savedSettings.fontSize || 16}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Input Area with Enhanced Glass/Transparency */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 pt-2 z-20">
-                <ChatInput
-                  ref={chatInputRef}
-                  onSend={sendMessage}
-                  onStop={stopGeneration}
-                  disabled={isLoading}
-                  isLoading={isLoading}
-                  showScrollToBottom={showScrollToBottom}
-                  onScrollToBottom={() => scrollToBottomRef.current?.()}
-                />
+              {/* Input Area with Fixed Width */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 pt-2 z-20 flex justify-center">
+                <div className="w-full max-w-4xl">
+                  <ChatInput
+                    ref={chatInputRef}
+                    onSend={sendMessage}
+                    onStop={stopGeneration}
+                    disabled={isLoading}
+                    isLoading={isLoading}
+                    showScrollToBottom={showScrollToBottom}
+                    onScrollToBottom={() => scrollToBottomRef.current?.()}
+                  />
+                </div>
               </div>
             </div>
           </>
