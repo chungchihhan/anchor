@@ -46,6 +46,8 @@ export interface AppSettings {
   displayMode: 'compact' | 'columns';
   chatWidth: number; // percentage (30-100)
   fontSize: number; // pixels (12-24)
+  maxContextMessages: number; // maximum messages to send in context (0 = unlimited)
+  maxOutputTokens: number; // maximum tokens the model can generate (1024-128000)
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -55,6 +57,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   displayMode: 'compact',
   chatWidth: 70, // percentage
   fontSize: 16, // pixels
+  maxContextMessages: 20, // limit context to last 20 messages
+  maxOutputTokens: 16384, // 16K tokens - generous default for most modern models
   shortcuts: {
     'newChat': 'Cmd+N',
     'toggleModel': 'Cmd+M',

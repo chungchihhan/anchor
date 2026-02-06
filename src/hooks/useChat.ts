@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Message } from '@/types';
 import { LLMService } from '@/services/LLMService';
 import { HistoryService } from '@/services/HistoryService';
+import { StorageService } from '@/services/StorageService';
 
 export function useChat() {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -110,7 +111,17 @@ export function useChat() {
         abortControllerRef.current = new AbortController();
 
         try {
-            const contextMessages = newMessages.map(({ role, content }) => ({ role, content }));
+            // Apply sliding window to limit context size
+            const settings = StorageService.getSettings();
+            const maxContext = settings.maxContextMessages || 0;
+
+            // If maxContext is 0 (unlimited) or greater than message count, use all messages
+            // Otherwise, take the last maxContext messages
+            const messagesToSend = maxContext > 0 && newMessages.length > maxContext
+                ? newMessages.slice(-maxContext)
+                : newMessages;
+
+            const contextMessages = messagesToSend.map(({ role, content }) => ({ role, content }));
 
             // Add placeholder for assistant with MODEL metadata
             setMessages(prev => [...prev, {
