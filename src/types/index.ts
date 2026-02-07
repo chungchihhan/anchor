@@ -9,8 +9,21 @@ export interface ChatSession {
     id: string;
     title: string;
     messages: Message[];
-    compactSummary?: string;        // Single rolling summary (markdown)
-    summaryUpToIndex?: number;      // Last message index included in summary
+
+    /**
+     * A rolling markdown summary of older conversation messages.
+     * This summary is regenerated when the conversation exceeds token limits.
+     * Should be set together with summaryUpToIndex.
+     */
+    compactSummary?: string;
+
+    /**
+     * The 0-based index of the last message included in compactSummary.
+     * Messages from index 0 to summaryUpToIndex (inclusive) are represented
+     * by the compactSummary. Should be set together with compactSummary.
+     */
+    summaryUpToIndex?: number;
+
     timestamp: number;
 }
 

@@ -10,7 +10,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@anthropic-ai/tokenizer": "^0.0.4",
+    "@anthropic-ai/tokenizer": "~0.0.4",
     "@tauri-apps/api": "^2.9.1",
     "@tauri-apps/plugin-http": "^2.5.4",
     "clsx": "^2.1.1",
