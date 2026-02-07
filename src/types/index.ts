@@ -9,7 +9,9 @@ export interface ChatSession {
     id: string;
     title: string;
     messages: Message[];
-    timestamp: number; // For sorting
+    compactSummary?: string;        // Single rolling summary (markdown)
+    summaryUpToIndex?: number;      // Last message index included in summary
+    timestamp: number;
 }
 
 export interface ChatCompletionRequest {
