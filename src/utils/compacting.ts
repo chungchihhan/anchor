@@ -1,3 +1,5 @@
+'use client';
+
 import { Message } from '@/types';
 import { LLMService } from '@/services/LLMService';
 import {

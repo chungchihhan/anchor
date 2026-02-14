@@ -3,6 +3,7 @@ import { Message } from '@/types';
 import { LLMService } from '@/services/LLMService';
 import { HistoryService } from '@/services/HistoryService';
 import { StorageService } from '@/services/StorageService';
+import { checkIfCompactNeeded, performCompact, buildContextForAPI } from '@/utils/compacting';
 
 export function useChat() {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -114,24 +115,43 @@ export function useChat() {
         abortControllerRef.current = new AbortController();
 
         try {
-            // Apply sliding window to limit context size
-            const settings = StorageService.getSettings();
-            const maxContext = settings.maxContextMessages || 0;
+            // Check if compacting needed BEFORE sending
+            const needsCompact = await checkIfCompactNeeded(
+                newMessages,
+                compactSummary,
+                summaryUpToIndex
+            );
 
-            // If maxContext is 0 (unlimited) or greater than message count, use all messages
-            // Otherwise, take the last maxContext messages
-            const messagesToSend = maxContext > 0 && newMessages.length > maxContext
-                ? newMessages.slice(-maxContext)
-                : newMessages;
+            if (needsCompact) {
+                setIsCompacting(true);
 
-            const contextMessages = messagesToSend.map(({ role, content }) => ({ role, content }));
+                const { summary, summaryUpToIndex: newIndex } = await performCompact(
+                    newMessages,
+                    compactSummary,
+                    summaryUpToIndex
+                );
+
+                setCompactSummary(summary);
+                setSummaryUpToIndex(newIndex);
+                setIsCompacting(false);
+
+                // TODO: Show notification (will implement in UI task)
+                console.log(`🔄 Compacted ${newIndex + 1} messages`);
+            }
+
+            // Build context for API
+            const contextMessages = buildContextForAPI(
+                newMessages,
+                compactSummary,
+                summaryUpToIndex
+            );
 
             // Add placeholder for assistant with MODEL metadata
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: '',
                 timestamp: Date.now(),
-                model: selectedModel // Track model
+                model: selectedModel
             }]);
 
             let fullContent = '';
@@ -149,9 +169,8 @@ export function useChat() {
         } catch (err) {
             console.error('Error in sendMessage:', err);
             setError(err instanceof Error ? err.message : 'An error occurred');
-            // setMessages(prev => prev.slice(0, -1)); // Don't remove message on error so we can see what happened
 
-            // Append error to the message content so user sees it
+            // Append error to the message content
             setMessages(prev => {
                 const updated = [...prev];
                 const lastMsg = updated[updated.length - 1];
@@ -165,6 +184,7 @@ export function useChat() {
             });
         } finally {
             setIsLoading(false);
+            setIsCompacting(false);
             abortControllerRef.current = null;
         }
     };
