@@ -50,6 +50,7 @@ export default function Home() {
     compactSummary,
     summaryUpToIndex,
     isCompacting,
+    updateSummary,
   } = useChat();
 
   const phrases = [
@@ -547,8 +548,7 @@ export default function Home() {
         summary={compactSummary || ''}
         summaryUpToIndex={summaryUpToIndex ?? 0}
         onSave={(newSummary) => {
-          // TODO: Implement summary update in useChat
-          console.log('Summary updated:', newSummary);
+          updateSummary(newSummary);
           setShowCompactModal(false);
         }}
         onClose={() => setShowCompactModal(false)}
