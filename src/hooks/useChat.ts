@@ -83,12 +83,14 @@ export function useChat() {
                 id: sessionId,
                 title,
                 messages: currentMessages,
+                compactSummary,
+                summaryUpToIndex,
                 timestamp: Date.now()
             });
         } catch (error) {
             console.error('Save failed', error);
         }
-    }, [currentSessionId]);
+    }, [currentSessionId, compactSummary, summaryUpToIndex]);
 
     // Auto-save effect
     useEffect(() => {
@@ -230,6 +232,8 @@ export function useChat() {
             await saveSession(messages, currentSessionId);
         }
         setMessages([]);
+        setCompactSummary(undefined);
+        setSummaryUpToIndex(undefined);
         setError(null);
         setCurrentSessionId(null);
     };
@@ -244,8 +248,9 @@ export function useChat() {
         try {
             const session = await HistoryService.loadLocal(id);
             if (session) {
-                // Handle both legacy (messages array) and new (session object) if logic was loose, but Types enforce session now
                 setMessages(session.messages || session as any);
+                setCompactSummary(session.compactSummary);
+                setSummaryUpToIndex(session.summaryUpToIndex);
                 setCurrentSessionId(session.id || id);
             }
         } catch (error) {
