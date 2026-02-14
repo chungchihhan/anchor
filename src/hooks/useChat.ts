@@ -289,6 +289,14 @@ export function useChat() {
         }
     };
 
+    const updateSummary = useCallback((newSummary: string) => {
+        setCompactSummary(newSummary);
+        // Trigger save with updated summary
+        if (messages.length > 0 && currentSessionId) {
+            saveSession(messages, currentSessionId);
+        }
+    }, [messages, currentSessionId, saveSession]);
+
     return {
         messages,
         isLoading,
@@ -307,6 +315,7 @@ export function useChat() {
         editMessage,
         compactSummary,
         summaryUpToIndex,
-        isCompacting
+        isCompacting,
+        updateSummary
     };
 }
