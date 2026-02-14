@@ -11,6 +11,9 @@ export function useChat() {
     const [availableModels, setAvailableModels] = useState<string[]>([]);
     const [selectedModel, setSelectedModel] = useState<string>('gpt-3.5-turbo');
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+    const [compactSummary, setCompactSummary] = useState<string | undefined>(undefined);
+    const [summaryUpToIndex, setSummaryUpToIndex] = useState<number | undefined>(undefined);
+    const [isCompacting, setIsCompacting] = useState(false);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
