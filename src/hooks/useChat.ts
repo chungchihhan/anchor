@@ -304,6 +304,9 @@ export function useChat() {
         downloadChat, // Client-side download
         importChat,
         retryMessage,
-        editMessage
+        editMessage,
+        compactSummary,
+        summaryUpToIndex,
+        isCompacting
     };
 }
