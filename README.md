@@ -100,6 +100,26 @@ After opening the app:
 
 ---
 
+## Features
+
+### Conversation Compacting
+
+Anchor automatically manages long conversations to prevent token limit errors:
+
+- **Auto-compacting**: When conversations exceed 64K tokens, older messages are automatically summarized
+- **Progressive condensation**: Summaries build on themselves for ultra-long conversations
+- **Full history preserved**: Original messages are never deleted, always visible in chat
+- **User-editable**: View and edit the compact summary via the 📝 button
+- **Multi-language**: Accurate token counting for English and Chinese text
+
+**How it works:**
+- Original messages stay in your local history
+- API receives: compact summary + recent 5 messages
+- You can view/edit the summary anytime
+- Summaries are saved with your chat sessions
+
+---
+
 ## Available Scripts
 
 | Command               | Description                            |
