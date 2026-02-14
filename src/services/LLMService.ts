@@ -395,4 +395,58 @@ export class LLMService {
       }
     }
   }
+
+  /**
+   * Generate a conversation summary using the LLM
+   * Non-streaming call for summarization
+   */
+  static async generateSummary(messages: Message[]): Promise<string> {
+    const settings = StorageService.getSettings();
+    const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    let apiKey = process.env.NEXT_PUBLIC_API_KEY || settings.apiKey;
+    let endpointUrl = envUrl || settings.endpointUrl;
+
+    if (!apiKey) throw new Error('API Key missing');
+
+    apiKey = apiKey.trim();
+    endpointUrl = endpointUrl.trim();
+
+    let cleanUrl = endpointUrl.replace(/\/$/, '');
+    if (!cleanUrl.endsWith('/chat/completions')) {
+      cleanUrl += '/chat/completions';
+    }
+
+    const modelName = settings.modelName || 'gpt-3.5-turbo';
+
+    const payload = {
+      messages,
+      model: modelName,
+      stream: false,        // Non-streaming for summaries
+      max_tokens: 8192,     // 8K for detailed summaries
+      temperature: 0.3,     // Lower temp for consistency
+    };
+
+    const response = await fetch(cleanUrl, {
+      method: 'POST',
+      credentials: 'omit',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Summary generation failed: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    if (data.choices?.[0]?.message?.content) {
+      return data.choices[0].message.content;
+    }
+
+    throw new Error('Invalid summary response format');
+  }
 }
