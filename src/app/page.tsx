@@ -9,6 +9,7 @@ import { ModelSelector } from "@/components/ModelSelector";
 import { ChatHistoryModal } from "@/components/ChatHistoryModal";
 import { TableOfContents } from "@/components/TableOfContents";
 import LightRays from "@/components/LightRays";
+import { CompactSummaryModal } from "@/components/CompactSummaryModal";
 import { useChat } from "@/hooks/useChat";
 import { useShortcuts, Shortcut } from "@/hooks/useShortcuts";
 import { Info, Download, MessageCircle, Command, Anchor } from "lucide-react";
@@ -29,6 +30,7 @@ export default function Home() {
   const [shouldShake, setShouldShake] = useState(false);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const scrollToBottomRef = useRef<(() => void) | null>(null);
+  const [showCompactModal, setShowCompactModal] = useState(false);
 
   const {
     messages,
@@ -45,6 +47,9 @@ export default function Home() {
     importChat,
     retryMessage,
     editMessage,
+    compactSummary,
+    summaryUpToIndex,
+    isCompacting,
   } = useChat();
 
   const phrases = [
@@ -374,6 +379,15 @@ export default function Home() {
               <Download size={18} />
             </button>
           )}
+          {compactSummary && (
+            <button
+              onClick={() => setShowCompactModal(true)}
+              className="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 rounded-lg text-sm text-white/90 transition-all flex items-center gap-2"
+              title="View Compact Summary"
+            >
+              📝 Summary ({(summaryUpToIndex ?? 0) + 1} msgs)
+            </button>
+          )}
           <button
             onClick={loadFiles}
             className="p-2 rounded-lg text-white/50 hover:text-white transition-colors hover:bg-white/5"
@@ -390,6 +404,14 @@ export default function Home() {
           </button>
         </div>
       </header>
+
+      {/* Compacting Indicator */}
+      {isCompacting && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-cyan-500/20 border border-cyan-400/50 rounded-lg text-white text-sm flex items-center gap-2 z-50">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
+          Compacting conversation...
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 flex flex-col relative z-0 overflow-hidden">
@@ -518,6 +540,19 @@ export default function Home() {
 
       {/* Table of Contents */}
       <TableOfContents messages={messages} />
+
+      {/* Compact Summary Modal */}
+      <CompactSummaryModal
+        isOpen={showCompactModal}
+        summary={compactSummary || ''}
+        summaryUpToIndex={summaryUpToIndex ?? 0}
+        onSave={(newSummary) => {
+          // TODO: Implement summary update in useChat
+          console.log('Summary updated:', newSummary);
+          setShowCompactModal(false);
+        }}
+        onClose={() => setShowCompactModal(false)}
+      />
     </main>
   );
 }
