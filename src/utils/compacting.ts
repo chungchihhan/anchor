@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { Message } from '@/types';
-import { LLMService } from '@/services/LLMService';
+import { Message } from "@/types";
+import { LLMService } from "@/services/LLMService";
 import {
   estimateTotalTokens,
   COMPACT_THRESHOLD,
   KEEP_RECENT_COUNT,
-  MIN_MESSAGES_TO_COMPACT
-} from './tokenCounter';
+  MIN_MESSAGES_TO_COMPACT,
+} from "./tokenCounter";
 
 /**
  * Check if conversation needs compacting based on token count
@@ -15,7 +15,7 @@ import {
 export async function checkIfCompactNeeded(
   messages: Message[],
   summary?: string,
-  summaryUpToIndex?: number
+  summaryUpToIndex?: number,
 ): Promise<boolean> {
   // Don't compact tiny conversations
   if (messages.length < MIN_MESSAGES_TO_COMPACT) {
@@ -35,9 +35,9 @@ export async function checkIfCompactNeeded(
  * Format messages for summarization prompt
  */
 function formatMessages(messages: Message[]): string {
-  return messages.map((m, i) =>
-    `**${m.role}** (msg ${i + 1}): ${m.content}`
-  ).join('\n\n');
+  return messages
+    .map((m, i) => `**${m.role}** (msg ${i + 1}): ${m.content}`)
+    .join("\n\n");
 }
 
 /**
@@ -45,12 +45,12 @@ function formatMessages(messages: Message[]): string {
  */
 function buildSummaryPrompt(
   previousSummary: string | undefined,
-  messagesToCompact: Message[]
+  messagesToCompact: Message[],
 ): Message[] {
   const systemPrompt = `You are a conversation summarizer. Create a concise but comprehensive summary of the conversation below.
 
 IMPORTANT:
-- Preserve key technical details, decisions, and context
+- Remeber what the user has said and the related assistant responses, and summarize them in a way that preserves the key technical details, decisions, and context
 - Use markdown formatting
 - Be concise but don't lose critical information
 - If there's a previous summary, integrate it with the new messages into ONE cohesive summary
@@ -59,17 +59,17 @@ IMPORTANT:
   if (previousSummary) {
     // Re-compacting: include previous summary
     return [
-      { role: 'system', content: systemPrompt },
+      { role: "system", content: systemPrompt },
       {
-        role: 'user',
-        content: `Previous summary:\n\n${previousSummary}\n\n---\n\nNew messages to add:\n\n${formatMessages(messagesToCompact)}\n\nCreate a new integrated summary.`
-      }
+        role: "user",
+        content: `Previous summary:\n\n${previousSummary}\n\n---\n\nNew messages to add:\n\n${formatMessages(messagesToCompact)}\n\nCreate a new integrated summary.`,
+      },
     ];
   } else {
     // First compact: just the messages
     return [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: formatMessages(messagesToCompact) }
+      { role: "system", content: systemPrompt },
+      { role: "user", content: formatMessages(messagesToCompact) },
     ];
   }
 }
@@ -81,7 +81,7 @@ IMPORTANT:
 export async function performCompact(
   currentMessages: Message[],
   currentSummary?: string,
-  currentSummaryUpToIndex?: number
+  currentSummaryUpToIndex?: number,
 ): Promise<{ summary: string; summaryUpToIndex: number }> {
   try {
     // Keep last N messages verbatim
@@ -99,16 +99,16 @@ export async function performCompact(
 
     return {
       summary,
-      summaryUpToIndex: compactUpTo - 1
+      summaryUpToIndex: compactUpTo - 1,
     };
   } catch (error) {
-    console.error('Compacting failed:', error);
+    console.error("Compacting failed:", error);
 
     // Fallback: use previous summary if exists
     if (currentSummary) {
       return {
         summary: currentSummary,
-        summaryUpToIndex: currentSummaryUpToIndex!
+        summaryUpToIndex: currentSummaryUpToIndex!,
       };
     }
 
@@ -116,7 +116,7 @@ export async function performCompact(
     const fallbackSummary = `[Auto-summary failed. Conversation started at ${new Date().toLocaleString()}]`;
     return {
       summary: fallbackSummary,
-      summaryUpToIndex: 0
+      summaryUpToIndex: 0,
     };
   }
 }
@@ -128,17 +128,17 @@ export async function performCompact(
 export function buildContextForAPI(
   messages: Message[],
   summary?: string,
-  summaryUpToIndex?: number
+  summaryUpToIndex?: number,
 ): Message[] {
   if (!summary) {
-    return messages;  // No compacting yet
+    return messages; // No compacting yet
   }
 
   // Return: [summary as system message] + [recent messages]
   const recentMessages = messages.slice(summaryUpToIndex! + 1);
 
   return [
-    { role: 'system', content: `Previous conversation summary:\n\n${summary}` },
-    ...recentMessages
+    { role: "system", content: `Previous conversation summary:\n\n${summary}` },
+    ...recentMessages,
   ];
 }
