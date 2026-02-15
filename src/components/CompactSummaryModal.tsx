@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -19,10 +19,18 @@ export function CompactSummaryModal({
 }: CompactSummaryModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedSummary, setEditedSummary] = useState(summary);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setEditedSummary(summary);
-  }, [summary]);
+    setIsEditing(false); // Reset editing state when modal opens
+  }, [summary, isOpen]);
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [isEditing]);
 
   if (!isOpen) return null;
 
@@ -31,10 +39,15 @@ export function CompactSummaryModal({
     setIsEditing(false);
   };
 
+  const handleClose = () => {
+    setIsEditing(false); // Reset editing state when closing
+    onClose();
+  };
+
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+      onClick={handleClose}
     >
       <div
         className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-xl w-full max-w-4xl max-h-[80vh] flex flex-col shadow-2xl"
@@ -66,7 +79,7 @@ export function CompactSummaryModal({
               </button>
             )}
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="text-white/40 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-md"
             >
               <X size={20} />
@@ -78,6 +91,7 @@ export function CompactSummaryModal({
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
           {isEditing ? (
             <textarea
+              ref={textareaRef}
               value={editedSummary}
               onChange={(e) => setEditedSummary(e.target.value)}
               className="w-full h-full min-h-[400px] bg-white/5 border border-white/10 rounded-lg p-4 text-white font-mono text-sm resize-none focus:outline-none focus:border-cyan-500/50"

@@ -7,6 +7,7 @@
 ## Overview
 
 Instead of simple sliding window truncation, implement progressive conversation compacting where:
+
 - Original messages are always preserved in full
 - Older messages get summarized via LLM
 - Summaries build on themselves (re-summarization)
@@ -29,9 +30,9 @@ Instead of simple sliding window truncation, implement progressive conversation 
 export interface ChatSession {
   id: string;
   title: string;
-  messages: Message[];           // Full original messages (never truncated)
-  compactSummary?: string;        // Single rolling summary (markdown)
-  summaryUpToIndex?: number;      // Last message index included in summary
+  messages: Message[]; // Full original messages (never truncated)
+  compactSummary?: string; // Single rolling summary (markdown)
+  summaryUpToIndex?: number; // Last message index included in summary
   timestamp: number;
 }
 ```
@@ -39,6 +40,7 @@ export interface ChatSession {
 ### Compacting Flow Example
 
 **First compact (messages 0-30 exceed 64K):**
+
 ```
 Input to LLM: messages[0-25]
 Output: summary1 = "User asked about X, I explained Y..."
@@ -48,6 +50,7 @@ Send to API: [summary1 as system message, messages[26-30]]
 ```
 
 **Second compact (summary1 + messages[26-40] exceed 64K):**
+
 ```
 Input to LLM: [summary1, messages[26-35]]
 Output: summary2 = "Earlier: X and Y. Then discussed Z..." (more condensed)
@@ -65,13 +68,13 @@ npm install @anthropic-ai/tokenizer
 ```
 
 ```typescript
-import { countTokens as anthropicCountTokens } from '@anthropic-ai/tokenizer';
+import { countTokens as anthropicCountTokens } from "@anthropic-ai/tokenizer";
 
 function countTokens(text: string): number {
   try {
     return anthropicCountTokens(text);
   } catch (e) {
-    console.warn('Token counting failed, using fallback', e);
+    console.warn("Token counting failed, using fallback", e);
     // Conservative fallback for mixed English/Chinese
     return Math.ceil(text.length / 2);
   }
@@ -79,7 +82,7 @@ function countTokens(text: string): number {
 
 async function estimateTotalTokensWithTokenizer(
   messages: Message[],
-  summary?: string
+  summary?: string,
 ): Promise<number> {
   let total = 0;
 
@@ -98,6 +101,7 @@ async function estimateTotalTokensWithTokenizer(
 ```
 
 **Why Anthropic's tokenizer:**
+
 - Accurate for Claude (primary model)
 - Lightweight
 - Reasonably accurate for other models
@@ -108,8 +112,8 @@ async function estimateTotalTokensWithTokenizer(
 ### Constants
 
 ```typescript
-const COMPACT_THRESHOLD = 64000;  // 64K tokens
-const KEEP_RECENT_COUNT = 5;      // Keep last 5 messages verbatim
+const COMPACT_THRESHOLD = 64000; // 64K tokens
+const KEEP_RECENT_COUNT = 5; // Keep last 5 messages verbatim
 const MIN_MESSAGES_TO_COMPACT = 10; // Don't compact tiny conversations
 ```
 
@@ -119,7 +123,7 @@ const MIN_MESSAGES_TO_COMPACT = 10; // Don't compact tiny conversations
 async function checkIfCompactNeeded(
   messages: Message[],
   summary?: string,
-  summaryUpToIndex?: number
+  summaryUpToIndex?: number,
 ): Promise<boolean> {
   // Don't compact tiny conversations
   if (messages.length < MIN_MESSAGES_TO_COMPACT) {
@@ -130,7 +134,10 @@ async function checkIfCompactNeeded(
     ? messages.slice(summaryUpToIndex + 1)
     : messages;
 
-  const totalTokens = await estimateTotalTokensWithTokenizer(messagesToCount, summary);
+  const totalTokens = await estimateTotalTokensWithTokenizer(
+    messagesToCount,
+    summary,
+  );
 
   return totalTokens > COMPACT_THRESHOLD;
 }
@@ -142,7 +149,7 @@ async function checkIfCompactNeeded(
 async function performCompact(
   currentMessages: Message[],
   currentSummary?: string,
-  currentSummaryUpToIndex?: number
+  currentSummaryUpToIndex?: number,
 ): Promise<{ summary: string; summaryUpToIndex: number }> {
   try {
     // Keep last 5 messages verbatim
@@ -160,16 +167,16 @@ async function performCompact(
 
     return {
       summary,
-      summaryUpToIndex: compactUpTo - 1
+      summaryUpToIndex: compactUpTo - 1,
     };
   } catch (error) {
-    console.error('Compacting failed:', error);
+    console.error("Compacting failed:", error);
 
     // Fallback: use previous summary if exists
     if (currentSummary) {
       return {
         summary: currentSummary,
-        summaryUpToIndex: currentSummaryUpToIndex!
+        summaryUpToIndex: currentSummaryUpToIndex!,
       };
     }
 
@@ -177,7 +184,7 @@ async function performCompact(
     const fallbackSummary = `[Auto-summary failed. Conversation started at ${new Date().toLocaleString()}]`;
     return {
       summary: fallbackSummary,
-      summaryUpToIndex: 0
+      summaryUpToIndex: 0,
     };
   }
 }
@@ -190,12 +197,12 @@ async function performCompact(
 ```typescript
 function buildSummaryPrompt(
   previousSummary: string | undefined,
-  messagesToCompact: Message[]
+  messagesToCompact: Message[],
 ): Message[] {
   const systemPrompt = `You are a conversation summarizer. Create a concise but comprehensive summary of the conversation below.
 
 IMPORTANT:
-- Preserve key technical details, decisions, and context
+- Remeber what the user has said and the related assistant responses, and summarize them in a way that preserves the key technical details, decisions, and context
 - Use markdown formatting
 - Be concise but don't lose critical information
 - If there's a previous summary, integrate it with the new messages into ONE cohesive summary
@@ -204,22 +211,25 @@ IMPORTANT:
   if (previousSummary) {
     // Re-compacting: include previous summary
     return [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: `Previous summary:\n\n${previousSummary}\n\n---\n\nNew messages to add:\n\n${formatMessages(messagesToCompact)}\n\nCreate a new integrated summary.` }
+      { role: "system", content: systemPrompt },
+      {
+        role: "user",
+        content: `Previous summary:\n\n${previousSummary}\n\n---\n\nNew messages to add:\n\n${formatMessages(messagesToCompact)}\n\nCreate a new integrated summary.`,
+      },
     ];
   } else {
     // First compact: just the messages
     return [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: formatMessages(messagesToCompact) }
+      { role: "system", content: systemPrompt },
+      { role: "user", content: formatMessages(messagesToCompact) },
     ];
   }
 }
 
 function formatMessages(messages: Message[]): string {
-  return messages.map((m, i) =>
-    `**${m.role}** (msg ${i + 1}): ${m.content}`
-  ).join('\n\n');
+  return messages
+    .map((m, i) => `**${m.role}** (msg ${i + 1}): ${m.content}`)
+    .join("\n\n");
 }
 ```
 
@@ -286,7 +296,7 @@ static async generateSummary(messages: Message[]): Promise<string> {
 async function sendMessage(content: string, overrideHistory?: Message[]) {
   if (!content.trim()) return;
 
-  const userMessage: Message = { role: 'user', content, timestamp: Date.now() };
+  const userMessage: Message = { role: "user", content, timestamp: Date.now() };
   const historyBase = overrideHistory || messages;
   const newMessages = [...historyBase, userMessage];
 
@@ -298,7 +308,7 @@ async function sendMessage(content: string, overrideHistory?: Message[]) {
     const needsCompact = await checkIfCompactNeeded(
       newMessages,
       compactSummary,
-      summaryUpToIndex
+      summaryUpToIndex,
     );
 
     if (needsCompact) {
@@ -307,7 +317,7 @@ async function sendMessage(content: string, overrideHistory?: Message[]) {
       const { summary, summaryUpToIndex: newIndex } = await performCompact(
         newMessages,
         compactSummary,
-        summaryUpToIndex
+        summaryUpToIndex,
       );
 
       setCompactSummary(summary);
@@ -321,12 +331,16 @@ async function sendMessage(content: string, overrideHistory?: Message[]) {
     const contextMessages = buildContextForAPI(
       newMessages,
       compactSummary,
-      summaryUpToIndex
+      summaryUpToIndex,
     );
 
     // Stream response as normal
-    let fullContent = '';
-    for await (const chunk of LLMService.streamMessage(contextMessages, selectedModel, abortSignal)) {
+    let fullContent = "";
+    for await (const chunk of LLMService.streamMessage(
+      contextMessages,
+      selectedModel,
+      abortSignal,
+    )) {
       fullContent += chunk;
       // Update UI...
     }
@@ -344,18 +358,18 @@ async function sendMessage(content: string, overrideHistory?: Message[]) {
 function buildContextForAPI(
   messages: Message[],
   summary?: string,
-  summaryUpToIndex?: number
+  summaryUpToIndex?: number,
 ): Message[] {
   if (!summary) {
-    return messages;  // No compacting yet
+    return messages; // No compacting yet
   }
 
   // Return: [summary as system message] + [recent messages]
   const recentMessages = messages.slice(summaryUpToIndex + 1);
 
   return [
-    { role: 'system', content: `Previous conversation summary:\n\n${summary}` },
-    ...recentMessages
+    { role: "system", content: `Previous conversation summary:\n\n${summary}` },
+    ...recentMessages,
   ];
 }
 ```
@@ -367,8 +381,12 @@ function buildContextForAPI(
 ```typescript
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [compactSummary, setCompactSummary] = useState<string | undefined>(undefined);
-  const [summaryUpToIndex, setSummaryUpToIndex] = useState<number | undefined>(undefined);
+  const [compactSummary, setCompactSummary] = useState<string | undefined>(
+    undefined,
+  );
+  const [summaryUpToIndex, setSummaryUpToIndex] = useState<number | undefined>(
+    undefined,
+  );
   const [isCompacting, setIsCompacting] = useState(false);
   // ... existing state
 }
@@ -430,7 +448,11 @@ interface CompactButtonProps {
   onClick: () => void;
 }
 
-function CompactSummaryButton({ summary, summaryUpToIndex, onClick }: CompactButtonProps) {
+function CompactSummaryButton({
+  summary,
+  summaryUpToIndex,
+  onClick,
+}: CompactButtonProps) {
   if (!summary) return null;
 
   return (
@@ -447,6 +469,7 @@ function CompactSummaryButton({ summary, summaryUpToIndex, onClick }: CompactBut
 ### 2. Compact Summary Modal
 
 Features:
+
 - View mode: Renders markdown
 - Edit mode: Textarea for user edits
 - Shows which messages are summarized
@@ -470,7 +493,7 @@ function CompactSummaryModal({
   isEditing,
   onEdit,
   onSave,
-  onClose
+  onClose,
 }: CompactSummaryModalProps) {
   const [editedSummary, setEditedSummary] = useState(summary);
 
@@ -507,7 +530,10 @@ function CompactSummaryModal({
                 Save
               </button>
             )}
-            <button onClick={onClose} className="text-white/40 hover:text-white">
+            <button
+              onClick={onClose}
+              className="text-white/40 hover:text-white"
+            >
               <X size={20} />
             </button>
           </div>
@@ -538,12 +564,14 @@ function CompactSummaryModal({
 Shows while summarization is in progress:
 
 ```tsx
-{isCompacting && (
-  <div className="fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-cyan-500/20 border border-cyan-400/50 rounded-lg text-white text-sm flex items-center gap-2 z-50">
-    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
-    Compacting conversation...
-  </div>
-)}
+{
+  isCompacting && (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-cyan-500/20 border border-cyan-400/50 rounded-lg text-white text-sm flex items-center gap-2 z-50">
+      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
+      Compacting conversation...
+    </div>
+  );
+}
 ```
 
 ## Error Handling
@@ -563,13 +591,13 @@ try {
   const summary = await LLMService.generateSummary(prompt);
   return { summary, summaryUpToIndex: compactUpTo - 1 };
 } catch (error) {
-  console.error('Compacting failed:', error);
+  console.error("Compacting failed:", error);
 
   if (currentSummary) {
     // Keep using old summary
     return {
       summary: currentSummary,
-      summaryUpToIndex: currentSummaryUpToIndex!
+      summaryUpToIndex: currentSummaryUpToIndex!,
     };
   }
 
@@ -577,7 +605,7 @@ try {
   const fallbackSummary = `[Auto-summary failed. Conversation started at ${new Date().toLocaleString()}]`;
   return {
     summary: fallbackSummary,
-    summaryUpToIndex: 0
+    summaryUpToIndex: 0,
   };
 }
 ```
@@ -585,12 +613,14 @@ try {
 ## Implementation Checklist
 
 ### Phase 1: Foundation
+
 - [ ] Install `@anthropic-ai/tokenizer` dependency
 - [ ] Add `compactSummary` and `summaryUpToIndex` to ChatSession type
 - [ ] Implement token counting utilities
 - [ ] Add state management in useChat hook
 
 ### Phase 2: Core Logic
+
 - [ ] Implement `checkIfCompactNeeded()`
 - [ ] Implement `performCompact()`
 - [ ] Implement `buildSummaryPrompt()`
@@ -598,12 +628,14 @@ try {
 - [ ] Add `LLMService.generateSummary()` method
 
 ### Phase 3: Integration
+
 - [ ] Modify `sendMessage()` to check and trigger compacting
 - [ ] Update `saveSession()` to persist summary
 - [ ] Update `importChat()` to restore summary
 - [ ] Update `clearChat()` to clear summary
 
 ### Phase 4: UI
+
 - [ ] Create CompactSummaryButton component
 - [ ] Create CompactSummaryModal component
 - [ ] Add compacting indicator
@@ -611,6 +643,7 @@ try {
 - [ ] Integrate components into main chat view
 
 ### Phase 5: Polish
+
 - [ ] Error handling and fallbacks
 - [ ] Edge case handling (small conversations, etc.)
 - [ ] User edit tracking (future enhancement)
@@ -628,12 +661,14 @@ try {
 ## Trade-offs
 
 **Pros:**
+
 - Much better than simple truncation
 - Maintains conversation continuity
 - User control over summaries
 - Accurate token counting
 
 **Cons:**
+
 - Extra API call for summarization (costs ~$0.01-0.02 per compact)
 - Slight delay when compacting (1-3 seconds)
 - Summary quality depends on LLM

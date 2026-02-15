@@ -56,6 +56,6 @@ export function estimateTotalTokens(
 }
 
 // Constants
-export const COMPACT_THRESHOLD = 64000;  // 64K tokens
+export const COMPACT_THRESHOLD = 100;  // TESTING: Lowered from 64K to 100 tokens for easy testing
 export const KEEP_RECENT_COUNT = 5;      // Keep last 5 messages verbatim
-export const MIN_MESSAGES_TO_COMPACT = 10; // Don't compact tiny conversations
+export const MIN_MESSAGES_TO_COMPACT = 3; // TESTING: Lowered from 10 to 3 for easy testing
