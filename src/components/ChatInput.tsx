@@ -172,7 +172,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           className={`relative max-w-4xl mx-auto flex items-end gap-2 ${hideSendButton ? "justify-center" : ""}`}
         >
           <div
-            className={`backdrop-blur-md bg-black/30 border border-white/30 shadow-2xl p-3 hover:bg-black/40 focus-within:bg-black/50 focus-within:border-white/70 ${isMultiLine ? "rounded-2xl" : "rounded-[32px]"} w-[calc(100%-60px)] transition-all duration-300 ease-out`}
+            className={`backdrop-blur-md bg-black/30 border border-white/30 shadow-2xl p-3 hover:bg-black/40 focus-within:bg-black/50 focus-within:border-white/70 ${isMultiLine ? "rounded-2xl" : "rounded-[32px]"} w-[calc(100%-60px)] transition-all duration-300 ease-out relative z-10`}
             style={{
               backdropFilter: "blur(12px)",
               WebkitBackdropFilter: "blur(12px)",

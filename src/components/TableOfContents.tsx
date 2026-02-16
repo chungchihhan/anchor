@@ -115,7 +115,7 @@ export function TableOfContents({ messages }: TableOfContentsProps) {
             <div
                 onMouseEnter={() => setIsHoveringPanel(true)}
                 onMouseLeave={() => setIsHoveringPanel(false)}
-                className={`fixed right-4 top-1/2 -translate-y-1/2 w-80 bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 transition-all duration-300 ease-out overflow-hidden flex flex-col ${
+                className={`fixed right-4 top-1/2 -translate-y-1/2 w-80 bg-black/90 border border-white/10 rounded-xl shadow-2xl z-50 transition-all duration-300 ease-out overflow-hidden flex flex-col ${
                     isVisible ? 'translate-x-0 opacity-100' : 'translate-x-[120%] opacity-0'
                 }`}
                 style={{ maxHeight: '70vh' }}

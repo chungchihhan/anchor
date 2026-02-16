@@ -132,11 +132,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all"
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 transition-all"
       onClick={onClose}
     >
       <div
-        className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in fade-in zoom-in duration-150 overflow-hidden ring-1 ring-white/5"
+        className="bg-black/90 border border-white/10 rounded-xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in fade-in zoom-in duration-150 overflow-hidden ring-1 ring-white/5"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

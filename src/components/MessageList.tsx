@@ -22,7 +22,7 @@ interface MessageListProps {
 // Memoized table block component
 const TableBlock = memo(({ node, className, children, ...props }: any) => {
   return (
-    <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
+    <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left  max-w-full">
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
         <span>Table</span>
       </div>
@@ -100,7 +100,7 @@ const CodeBlock = memo(({ inline, className, children, ...props }: any) => {
   }
 
   return (
-    <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
+    <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left  max-w-full">
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
         <span>{isMatch ? isMatch[1] : "code"}</span>
         <button
@@ -482,7 +482,7 @@ const SingleMessage = memo(
 
     if (isEditing) {
       return (
-        <div className="flex flex-col gap-3 w-full backdrop-blur-xl bg-black/30 border border-white/10 shadow-2xl rounded-2xl p-4 transition-all">
+        <div className="flex flex-col gap-3 w-full  bg-black/30 border border-white/10 shadow-2xl rounded-2xl p-4 transition-all">
           <textarea
             ref={textareaRef}
             value={editContent}
@@ -521,7 +521,7 @@ const SingleMessage = memo(
                   setEditContent("");
                 }
               }}
-              className="px-4 py-2 rounded-full text-xs font-medium bg-white/10 hover:bg-white/20 text-white transition-all shadow-lg hover:shadow-blue-400/20 border border-white/10 backdrop-blur-md"
+              className="px-4 py-2 rounded-full text-xs font-medium bg-white/10 hover:bg-white/20 text-white transition-all shadow-lg hover:shadow-blue-400/20 border border-white/10 "
             >
               Save & Generate
             </button>
@@ -1227,7 +1227,7 @@ export const MessageList = memo(function MessageList({
 
           <div className="flex flex-col items-start w-full min-w-0 overflow-hidden">
             <div
-              className={`w-full px-0 py-2 transition-all ${msg.role === "user" ? "bg-white/5 rounded-lg px-4 py-3 backdrop-blur-sm" : ""}`}
+              className={`w-full px-0 py-2 transition-all ${msg.role === "user" ? "bg-white/5 rounded-lg px-4 py-3 " : ""}`}
             >
               <SingleMessage
                 msg={msg}

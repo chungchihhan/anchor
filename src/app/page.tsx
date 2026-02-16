@@ -368,7 +368,7 @@ export default function Home() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsModelSelectorOpen(true)}
-            className="text-blue-300 text-xs font-mono uppercase tracking-wider bg-blue-900/10 px-2 py-0.5 rounded border border-blue-400/10 backdrop-blur-sm hover:bg-blue-400/20 transition-colors"
+            className="text-blue-300 text-xs font-mono uppercase tracking-wider bg-blue-900/10 px-2 py-0.5 rounded border border-blue-400/10  hover:bg-blue-400/20 transition-colors"
           >
             {selectedModel}
           </button>
@@ -506,7 +506,7 @@ export default function Home() {
 
       {/* Error Toast */}
       {error && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-red-500/90 text-white px-4 py-2 rounded-lg shadow-lg backdrop-blur-sm text-sm animate-in fade-in slide-in-from-top-2">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-red-500/90 text-white px-4 py-2 rounded-lg shadow-lg  text-sm animate-in fade-in slide-in-from-top-2">
           {error}
         </div>
       )}

@@ -16,7 +16,7 @@ interface ChatHistoryModalProps {
 
 const TableBlock = memo(({ node, className, children, ...props }: any) => {
     return (
-        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
+        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left  max-w-full">
             <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
                 <span>Table</span>
             </div>
@@ -85,7 +85,7 @@ const CodeBlock = memo(({ inline, className, children, ...props }: any) => {
     }
 
     return (
-        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left backdrop-blur-sm max-w-full">
+        <div className="relative group/code rounded-lg overflow-hidden border border-white/10 my-4 bg-black/50 text-left  max-w-full">
             <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 text-xs text-gray-400">
                 <span>{isMatch ? isMatch[1] : 'code'}</span>
                 <button onClick={handleCopy} className="hover:text-white transition-colors">
@@ -208,7 +208,7 @@ const MessagePreview = memo(({ msg, idx, onCopyMessage, msgsCopied }: {
                 )}
             </div>
 
-            <div className={`w-full px-0 py-2 transition-all overflow-hidden ${msg.role === 'user' ? 'bg-white/5 rounded-lg px-4 py-3 backdrop-blur-sm' : ''}`}>
+            <div className={`w-full px-0 py-2 transition-all overflow-hidden ${msg.role === 'user' ? 'bg-white/5 rounded-lg px-4 py-3 ' : ''}`}>
                 <div className={`leading-normal text-left break-words overflow-wrap-anywhere ${msg.role === 'user' ? 'text-cyan-100' : 'text-gray-300'}`}
                      style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                     {parts.map((part, i) => {
@@ -419,8 +419,8 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
     const selectedSession = filteredSessions[highlightedIndex];
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 transition-all">
-            <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-6xl h-[85vh] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 ring-1 ring-white/5 flex flex-col">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6 transition-all">
+            <div className="bg-black/90 border border-white/10 rounded-2xl w-full max-w-6xl h-[85vh] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 ring-1 ring-white/5 flex flex-col">
                 <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5 shrink-0">
                     <h3 className="text-white font-medium tracking-wide flex items-center gap-2">
                         <FolderOpen size={18} className="text-cyan-400" />
@@ -520,7 +520,7 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
                     <div className="flex-1 flex flex-col bg-black/40 relative min-w-0 overflow-hidden">
                         {selectedSession ? (
                             <>
-                                <div className="p-4 bg-gradient-to-b from-black/60 to-transparent backdrop-blur-sm flex items-center justify-between">
+                                <div className="p-4 bg-gradient-to-b from-black/60 to-transparent  flex items-center justify-between">
                                     <h4 className="text-white/90 font-medium truncate text-lg">{selectedSession.title || 'Untitled Chat'}</h4>
                                     <p className="text-xs text-white/40 font-mono shrink-0 ml-4">
                                         {selectedSession.messages.length} messages

@@ -147,8 +147,8 @@ export function ModelSelector({ isOpen, onClose, models, selectedModel, onSelect
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all">
-            <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-xl w-full max-w-4xl shadow-2xl flex flex-col animate-in fade-in zoom-in duration-150 overflow-hidden ring-1 ring-white/5 max-h-[85vh]">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 transition-all">
+            <div className="bg-black/90 border border-white/10 rounded-xl w-full max-w-4xl shadow-2xl flex flex-col animate-in fade-in zoom-in duration-150 overflow-hidden ring-1 ring-white/5 max-h-[85vh]">
                 {/* Header */}
                 <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5 shrink-0">
                     <div className="flex items-center gap-2 text-white">
