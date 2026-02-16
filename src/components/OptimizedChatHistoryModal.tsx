@@ -58,7 +58,7 @@ const LightweightMessagePreview = memo(
         </div>
 
         <div
-          className={`w-full px-0 py-2 transition-all overflow-hidden ${
+          className={`w-full px-0 py-2 transition-all ${
             message.role === "user" ? "bg-white/5 rounded-lg px-4 py-3" : ""
           }`}
         >
@@ -76,8 +76,7 @@ const LightweightMessagePreview = memo(
             {needsExpansion && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="inline-block mt-3 px-3 py-1.5 text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-md transition-all relative z-10 cursor-pointer"
-                style={{ position: 'relative', zIndex: 10 }}
+                className="inline-flex items-center mt-3 px-3 py-1.5 text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-md transition-all cursor-pointer"
               >
                 {isExpanded ? "Show less" : "Show more"}
               </button>
