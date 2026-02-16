@@ -232,11 +232,11 @@ export function ShortcutsHelp({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 transition-all"
+      className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4 transition-all"
       onClick={onClose}
     >
       <div
-        className="bg-black/90 border border-white/10 rounded-xl w-full max-w-3xl shadow-2xl flex flex-col animate-in fade-in zoom-in duration-150 overflow-hidden ring-1 ring-white/5 max-h-[85vh]"
+        className="bg-black/95 border border-white/10 rounded-xl w-full max-w-3xl shadow-2xl flex flex-col animate-in fade-in zoom-in duration-150 overflow-hidden ring-1 ring-white/5 max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

@@ -419,8 +419,8 @@ export function ChatHistoryModal({ isOpen, onClose, sessions, onSelect, onDelete
     const selectedSession = filteredSessions[highlightedIndex];
 
     return (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6 transition-all">
-            <div className="bg-black/90 border border-white/10 rounded-2xl w-full max-w-6xl h-[85vh] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 ring-1 ring-white/5 flex flex-col">
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6 transition-all">
+            <div className="bg-black/95 border border-white/10 rounded-2xl w-full max-w-6xl h-[85vh] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 ring-1 ring-white/5 flex flex-col">
                 <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5 shrink-0">
                     <h3 className="text-white font-medium tracking-wide flex items-center gap-2">
                         <FolderOpen size={18} className="text-cyan-400" />
