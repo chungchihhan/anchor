@@ -185,6 +185,11 @@ export function OptimizedChatHistoryModal({
   const [shouldShake, setShouldShake] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
+  // Lazy loading for sessions list
+  const INITIAL_SESSIONS_COUNT = 10;
+  const LOAD_MORE_COUNT = 10;
+  const [visibleSessionsCount, setVisibleSessionsCount] = useState(INITIAL_SESSIONS_COUNT);
+
   // Debounce session switching to reduce re-renders
   const [pendingHighlight, setPendingHighlight] = useState<number | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -205,7 +210,7 @@ export function OptimizedChatHistoryModal({
   }, [pendingHighlight]);
 
   // Filter sessions with memoization
-  const filteredSessions = useMemo(
+  const allFilteredSessions = useMemo(
     () =>
       sessions.filter((session) =>
         (session.title || "Untitled")
@@ -215,14 +220,36 @@ export function OptimizedChatHistoryModal({
     [sessions, searchQuery],
   );
 
+  // Apply lazy loading to filtered sessions
+  const filteredSessions = useMemo(
+    () => allFilteredSessions.slice(0, visibleSessionsCount),
+    [allFilteredSessions, visibleSessionsCount]
+  );
+
+  const hasMoreSessions = visibleSessionsCount < allFilteredSessions.length;
+
+  // Load more sessions function
+  const loadMoreSessions = useCallback(() => {
+    setVisibleSessionsCount(prev =>
+      Math.min(prev + LOAD_MORE_COUNT, allFilteredSessions.length)
+    );
+  }, [allFilteredSessions.length]);
+
   // Reset when modal opens
   useEffect(() => {
     if (isOpen) {
       setHighlightedIndex(0);
       setSearchQuery("");
       setPendingHighlight(null);
+      setVisibleSessionsCount(INITIAL_SESSIONS_COUNT);
     }
   }, [isOpen]);
+
+  // Reset visible sessions when search changes
+  useEffect(() => {
+    setVisibleSessionsCount(INITIAL_SESSIONS_COUNT);
+    setHighlightedIndex(0);
+  }, [searchQuery]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -232,10 +259,20 @@ export function OptimizedChatHistoryModal({
       if (e.key === "ArrowDown") {
         e.preventDefault();
         if (highlightedIndex >= filteredSessions.length - 1) {
-          setShouldShake(true);
-          setTimeout(() => setShouldShake(false), 500);
+          // If there are more sessions to load, load them
+          if (hasMoreSessions) {
+            loadMoreSessions();
+            setPendingHighlight(highlightedIndex + 1);
+          } else {
+            setShouldShake(true);
+            setTimeout(() => setShouldShake(false), 500);
+          }
         } else {
           setPendingHighlight(highlightedIndex + 1);
+          // Load more when approaching the end (2 items from bottom)
+          if (highlightedIndex >= filteredSessions.length - 3 && hasMoreSessions) {
+            loadMoreSessions();
+          }
         }
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
@@ -267,7 +304,7 @@ export function OptimizedChatHistoryModal({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, filteredSessions, highlightedIndex, onSelect, onClose, onDelete]);
+  }, [isOpen, filteredSessions, highlightedIndex, onSelect, onClose, onDelete, hasMoreSessions, loadMoreSessions]);
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -336,6 +373,14 @@ export function OptimizedChatHistoryModal({
             <div
               ref={listRef}
               className="flex-1 overflow-y-auto p-2 custom-scrollbar"
+              onScroll={(e) => {
+                const container = e.currentTarget;
+                const { scrollTop, scrollHeight, clientHeight } = container;
+                // Load more when scrolled to within 50px of the bottom
+                if (scrollHeight - scrollTop - clientHeight < 50 && hasMoreSessions) {
+                  loadMoreSessions();
+                }
+              }}
             >
               {filteredSessions.length === 0 ? (
                 <div className="text-center py-12 text-white/30 text-sm">
@@ -431,6 +476,19 @@ export function OptimizedChatHistoryModal({
                     )}
                   </div>
                 ))
+              )}
+
+              {/* Load more indicator */}
+              {hasMoreSessions && filteredSessions.length > 0 && (
+                <div className="flex justify-center py-3">
+                  <button
+                    onClick={loadMoreSessions}
+                    className="px-3 py-1.5 text-xs text-white/40 hover:text-white/70 bg-white/5 hover:bg-white/10 rounded-md transition-all flex items-center gap-2"
+                  >
+                    <ChevronDown size={14} />
+                    Load more ({allFilteredSessions.length - filteredSessions.length} remaining)
+                  </button>
+                </div>
               )}
             </div>
           </div>
