@@ -183,6 +183,7 @@ export function OptimizedChatHistoryModal({
   const [searchQuery, setSearchQuery] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [shouldShake, setShouldShake] = useState(false);
+  const [deleteKeyPressed, setDeleteKeyPressed] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   // Lazy loading for sessions list
@@ -242,6 +243,7 @@ export function OptimizedChatHistoryModal({
       setSearchQuery("");
       setPendingHighlight(null);
       setVisibleSessionsCount(INITIAL_SESSIONS_COUNT);
+      setDeleteKeyPressed(false);
     }
   }, [isOpen]);
 
@@ -284,13 +286,24 @@ export function OptimizedChatHistoryModal({
         }
       } else if (e.key === "Enter") {
         e.preventDefault();
-        if (filteredSessions.length > 0) {
+        if (deleteKeyPressed && onDelete && filteredSessions.length > 0) {
+          // If 'd' was pressed before, delete the selected chat
+          onDelete(filteredSessions[highlightedIndex].id);
+          setDeleteKeyPressed(false);
+        } else if (filteredSessions.length > 0) {
+          // Normal enter - select the chat
           onSelect(filteredSessions[highlightedIndex].id);
           onClose();
         }
       } else if (e.key === "Escape") {
         e.preventDefault();
+        setDeleteKeyPressed(false); // Reset delete key state
         onClose();
+      } else if (e.key === "d" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        if (onDelete && filteredSessions.length > 0) {
+          setDeleteKeyPressed(true);
+        }
       } else if (
         e.key === "Backspace" &&
         e.metaKey &&
@@ -299,12 +312,16 @@ export function OptimizedChatHistoryModal({
       ) {
         e.preventDefault();
         onDelete(filteredSessions[highlightedIndex].id);
+        setDeleteKeyPressed(false);
+      } else if (e.key !== "Shift" && e.key !== "Meta" && e.key !== "Control" && e.key !== "Alt") {
+        // Reset delete key state on any other key press (except modifiers)
+        setDeleteKeyPressed(false);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, filteredSessions, highlightedIndex, onSelect, onClose, onDelete, hasMoreSessions, loadMoreSessions]);
+  }, [isOpen, filteredSessions, highlightedIndex, onSelect, onClose, onDelete, hasMoreSessions, loadMoreSessions, deleteKeyPressed]);
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -339,9 +356,15 @@ export function OptimizedChatHistoryModal({
             Open Chat
           </h3>
           <div className="flex items-center gap-3">
-            <span className="text-[10px] text-white/30 border border-white/10 px-1.5 py-0.5 rounded font-mono hidden sm:inline-block">
-              Type to search • Arrows to navigate • Enter to open
-            </span>
+            {deleteKeyPressed ? (
+              <span className="text-xs text-red-400 bg-red-500/20 border border-red-400/50 px-2 py-1 rounded font-mono animate-pulse">
+                Press Enter to confirm delete
+              </span>
+            ) : (
+              <span className="text-[10px] text-white/30 border border-white/10 px-1.5 py-0.5 rounded font-mono hidden sm:inline-block">
+                Type to search • ↑↓ navigate • Enter open • D+Enter delete
+              </span>
+            )}
             <button
               onClick={onClose}
               className="text-white/40 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-md"
@@ -366,7 +389,6 @@ export function OptimizedChatHistoryModal({
                 }}
                 placeholder="Search titles..."
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-cyan-500/50 focus:bg-white/10 transition-all"
-                autoFocus
               />
             </div>
 
@@ -394,7 +416,9 @@ export function OptimizedChatHistoryModal({
                     key={session.id}
                     className={`w-full px-3 py-3 rounded-xl transition-all duration-200 flex items-center gap-3 group border border-transparent relative mb-1 ${
                       index === highlightedIndex
-                        ? "bg-white/10 border-white/5 shadow-lg"
+                        ? deleteKeyPressed
+                          ? "bg-red-500/20 border-red-400/50 shadow-lg shadow-red-500/20"
+                          : "bg-white/10 border-white/5 shadow-lg"
                         : "hover:bg-white/5 hover:border-white/5"
                     }`}
                     style={{
