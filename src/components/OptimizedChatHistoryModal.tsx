@@ -26,7 +26,7 @@ interface ChatHistoryModalProps {
 const LightweightMessagePreview = memo(
   ({ message, index }: { message: Message; index: number }) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    const MAX_PREVIEW_LENGTH = 300;
+    const MAX_PREVIEW_LENGTH = 500; // Increased to show more content
 
     const truncatedContent = useMemo(() => {
       const content = message.content || "";
@@ -76,7 +76,8 @@ const LightweightMessagePreview = memo(
             {needsExpansion && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                className="inline-block mt-3 px-3 py-1.5 text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-md transition-all relative z-10 cursor-pointer"
+                style={{ position: 'relative', zIndex: 10 }}
               >
                 {isExpanded ? "Show less" : "Show more"}
               </button>
