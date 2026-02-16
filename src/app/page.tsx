@@ -6,7 +6,7 @@ import { MessageList } from "@/components/MessageList";
 import { SettingsModal } from "@/components/SettingsModal";
 import { ShortcutsHelp } from "@/components/ShortcutsHelp";
 import { ModelSelector } from "@/components/ModelSelector";
-import { ChatHistoryModal } from "@/components/ChatHistoryModal";
+import { OptimizedChatHistoryModal } from "@/components/OptimizedChatHistoryModal";
 import { TableOfContents } from "@/components/TableOfContents";
 import LightRays from "@/components/LightRays";
 import { CompactSummaryModal } from "@/components/CompactSummaryModal";
@@ -525,7 +525,7 @@ export default function Home() {
         />
 
         {/* Load Modal */}
-        <ChatHistoryModal
+        <OptimizedChatHistoryModal
           isOpen={isLoadModalOpen}
           onClose={() => setIsLoadModalOpen(false)}
           sessions={savedFiles}
