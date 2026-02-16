@@ -12,7 +12,14 @@ import LightRays from "@/components/LightRays";
 import { CompactSummaryModal } from "@/components/CompactSummaryModal";
 import { useChat } from "@/hooks/useChat";
 import { useShortcuts, Shortcut } from "@/hooks/useShortcuts";
-import { Info, Download, MessageCircle, Command, Anchor, Logs } from "lucide-react";
+import {
+  Info,
+  Download,
+  MessageCircle,
+  Command,
+  Anchor,
+  Logs,
+} from "lucide-react";
 import { HistoryService } from "@/services/HistoryService";
 import { StorageService } from "@/services/StorageService";
 import { DEFAULT_SETTINGS } from "@/types";
@@ -339,223 +346,222 @@ export default function Home() {
 
   return (
     <>
-    <main className="flex h-screen w-full overflow-hidden flex-col relative bg-black">
-      <div className="absolute inset-0 z-0">
-        <LightRays
-          raysOrigin="top-center"
-          raysColor="#7dd3fc"
-          raysSpeed={1.5}
-          lightSpread={0.8}
-          rayLength={1.2}
-          followMouse={true}
-          mouseInfluence={0.1}
-          noiseAmount={0.1}
-          distortion={0.05}
-          className="opacity-40"
-        />
-      </div>
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 pb-4 pt-10 z-10 transition-all duration-300">
-        <div className="flex items-center gap-3">
-          <div className="relative group cursor-default">
-            <div className="absolute -inset-2 bg-cyan-500/30 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <Anchor className="w-5 h-5 relative transform group-hover:scale-110 transition-transform duration-500 text-white/70" />
-          </div>
-          <span className="text-white font-medium text-sm tracking-wide drop-shadow-md font-mono">
-            Anchor
-          </span>
+      <main className="flex h-screen w-full overflow-hidden flex-col relative bg-black">
+        <div className="absolute inset-0 z-0">
+          <LightRays
+            raysOrigin="top-center"
+            raysColor="#7dd3fc"
+            raysSpeed={1.5}
+            lightSpread={0.8}
+            rayLength={1.2}
+            followMouse={true}
+            mouseInfluence={0.1}
+            noiseAmount={0.1}
+            distortion={0.05}
+            className="opacity-40"
+          />
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsModelSelectorOpen(true)}
-            className="text-blue-300 text-xs font-mono uppercase tracking-wider bg-blue-900/10 px-2 py-0.5 rounded border border-blue-400/10  hover:bg-blue-400/20 transition-colors"
-          >
-            {selectedModel}
-          </button>
-          {messages.length > 0 && (
-            <button
-              onClick={downloadChat}
-              className="p-2 rounded-lg text-white/50 hover:text-white transition-colors hover:bg-white/5"
-              title="Export Chat (Download)"
-            >
-              <Download size={18} />
-            </button>
-          )}
-          {compactSummary && (
-            <button
-              onClick={() => setShowCompactModal(true)}
-              className="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 rounded-lg text-sm text-white/90 transition-all flex items-center gap-2"
-              title="View Compact Summary"
-            >
-              <Logs size={16} />
-              Summary ({(summaryUpToIndex ?? 0) + 1} msgs)
-            </button>
-          )}
-          <button
-            onClick={loadFiles}
-            className="p-2 rounded-lg text-white/50 hover:text-white transition-colors hover:bg-white/5"
-            title="Open Chat"
-          >
-            <MessageCircle size={18} />
-          </button>
-          <button
-            onClick={() => setIsHelpOpen(true)}
-            className="p-2 rounded-lg text-white/50 hover:text-white transition-colors hover:bg-white/5"
-            title="View Shortcuts"
-          >
-            <Command size={18} />
-          </button>
-        </div>
-      </header>
-
-      {/* Compacting Indicator */}
-      {isCompacting && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-cyan-500/20 border border-cyan-400/50 rounded-lg text-white text-sm flex items-center gap-2 z-50">
-          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
-          Compacting conversation...
-        </div>
-      )}
-
-      {/* Content */}
-      <div className="flex-1 flex flex-col relative z-0 overflow-hidden">
-        {messages.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-4">
-            <div className="w-full max-w-2xl">
-              <div className="text-center mb-10 relative">
-                {/* Ambient Background Glow */}
-                <div
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl animate-pulse"
-                  style={{ animationDuration: "4s" }}
-                />
-
-                <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/40 mb-3 drop-shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700 relative min-h-[3.5rem]">
-                  {displayedText}
-                  <span className="animate-pulse">|</span>
-                </h1>
-                <p className="text-white/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 relative">
-                  Your anchor in the noise.
-                </p>
-              </div>
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-                <ChatInput
-                  ref={chatInputRef}
-                  onSend={sendMessage}
-                  onStop={stopGeneration}
-                  disabled={isLoading}
-                  isLoading={isLoading}
-                  showScrollToBottom={false}
-                />
-              </div>
+        {/* Header */}
+        <header className="flex items-center justify-between px-6 pb-4 pt-10 z-10 transition-all duration-300">
+          <div className="flex items-center gap-3">
+            <div className="relative group cursor-default">
+              <div className="absolute -inset-2 bg-cyan-500/30 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <Anchor className="w-5 h-5 relative transform group-hover:scale-110 transition-transform duration-500 text-white/70" />
             </div>
+            <span className="text-white font-medium text-sm tracking-wide drop-shadow-md font-mono">
+              Anchor
+            </span>
           </div>
-        ) : (
-          <>
-            {/* Message Area with Dynamic Width */}
-            <div className="flex-1 overflow-hidden flex flex-col relative">
-              {/* Scrollable Message Area */}
-              <div
-                className="absolute inset-0 overflow-y-auto no-scrollbar scroll-smooth"
-                style={{
-                  maskImage:
-                    "linear-gradient(to bottom, transparent 0%, black 20px, black 100%)",
-                  WebkitMaskImage:
-                    "linear-gradient(to bottom, transparent 0%, black 20px, black 100%)",
-                }}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsModelSelectorOpen(true)}
+              className="text-blue-300 text-xs font-mono uppercase tracking-wider bg-blue-900/10 px-2 py-0.5 rounded border border-blue-400/10  hover:bg-blue-400/20 transition-colors"
+            >
+              {selectedModel}
+            </button>
+            {messages.length > 0 && (
+              <button
+                onClick={downloadChat}
+                className="p-2 rounded-lg text-white/50 hover:text-white transition-colors hover:bg-white/5"
+                title="Export Chat (Download)"
               >
-                <div className="min-h-full pb-32 flex flex-col items-center">
-                  <div
-                    className="w-full"
-                    style={{
-                      width: `${savedSettings.chatWidth || 70}%`,
-                    }}
-                  >
-                    <MessageList
-                      messages={messages}
-                      isLoading={isLoading}
-                      onRetry={retryMessage}
-                      onEdit={editMessage}
-                      displayMode={savedSettings.displayMode || "compact"}
-                      selectedMessageIndex={selectedMessageIndex}
-                      shouldShake={shouldShake}
-                      onScrollStateChange={setShowScrollToBottom}
-                      scrollToBottomRef={scrollToBottomRef}
-                      fontSize={savedSettings.fontSize || 16}
-                    />
-                  </div>
-                </div>
-              </div>
+                <Download size={18} />
+              </button>
+            )}
+            {compactSummary && (
+              <button
+                onClick={() => setShowCompactModal(true)}
+                className="p-2 rounded-lg text-white/50 hover:text-white transition-colors hover:bg-white/5"
+                title="View Compact Summary"
+              >
+                <Logs size={18} />
+              </button>
+            )}
+            <button
+              onClick={loadFiles}
+              className="p-2 rounded-lg text-white/50 hover:text-white transition-colors hover:bg-white/5"
+              title="Open Chat"
+            >
+              <MessageCircle size={18} />
+            </button>
+            <button
+              onClick={() => setIsHelpOpen(true)}
+              className="p-2 rounded-lg text-white/50 hover:text-white transition-colors hover:bg-white/5"
+              title="View Shortcuts"
+            >
+              <Command size={18} />
+            </button>
+          </div>
+        </header>
 
-              {/* Input Area with Fixed Width */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 pt-2 z-20 flex justify-center">
-                <div className="w-full max-w-4xl">
+        {/* Compacting Indicator */}
+        {isCompacting && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-cyan-500/20 border border-cyan-400/50 rounded-lg text-white text-sm flex items-center gap-2 z-50">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
+            Compacting conversation...
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="flex-1 flex flex-col relative z-0 overflow-hidden">
+          {messages.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-4">
+              <div className="w-full max-w-2xl">
+                <div className="text-center mb-10 relative">
+                  {/* Ambient Background Glow */}
+                  <div
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl animate-pulse"
+                    style={{ animationDuration: "4s" }}
+                  />
+
+                  <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/40 mb-3 drop-shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700 relative min-h-[3.5rem]">
+                    {displayedText}
+                    <span className="animate-pulse">|</span>
+                  </h1>
+                  <p className="text-white/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 relative">
+                    Your anchor in the noise.
+                  </p>
+                </div>
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
                   <ChatInput
                     ref={chatInputRef}
                     onSend={sendMessage}
                     onStop={stopGeneration}
                     disabled={isLoading}
                     isLoading={isLoading}
-                    showScrollToBottom={showScrollToBottom}
-                    onScrollToBottom={() => scrollToBottomRef.current?.()}
+                    showScrollToBottom={false}
                   />
                 </div>
               </div>
             </div>
-          </>
-        )}
-      </div>
+          ) : (
+            <>
+              {/* Message Area with Dynamic Width */}
+              <div className="flex-1 overflow-hidden flex flex-col relative">
+                {/* Scrollable Message Area */}
+                <div
+                  className="absolute inset-0 overflow-y-auto no-scrollbar scroll-smooth"
+                  style={{
+                    maskImage:
+                      "linear-gradient(to bottom, transparent 0%, black 20px, black 100%)",
+                    WebkitMaskImage:
+                      "linear-gradient(to bottom, transparent 0%, black 20px, black 100%)",
+                  }}
+                >
+                  <div className="min-h-full pb-32 flex flex-col items-center">
+                    <div
+                      className="w-full"
+                      style={{
+                        width: `${savedSettings.chatWidth || 70}%`,
+                      }}
+                    >
+                      <MessageList
+                        messages={messages}
+                        isLoading={isLoading}
+                        onRetry={retryMessage}
+                        onEdit={editMessage}
+                        displayMode={savedSettings.displayMode || "compact"}
+                        selectedMessageIndex={selectedMessageIndex}
+                        shouldShake={shouldShake}
+                        onScrollStateChange={setShowScrollToBottom}
+                        scrollToBottomRef={scrollToBottomRef}
+                        fontSize={savedSettings.fontSize || 16}
+                      />
+                    </div>
+                  </div>
+                </div>
 
-      {/* Error Toast */}
-      {error && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-red-500/90 text-white px-4 py-2 rounded-lg shadow-lg  text-sm animate-in fade-in slide-in-from-top-2">
-          {error}
+                {/* Input Area with Fixed Width */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 pt-2 z-20 flex justify-center">
+                  <div className="w-full max-w-4xl">
+                    <ChatInput
+                      ref={chatInputRef}
+                      onSend={sendMessage}
+                      onStop={stopGeneration}
+                      disabled={isLoading}
+                      isLoading={isLoading}
+                      showScrollToBottom={showScrollToBottom}
+                      onScrollToBottom={() => scrollToBottomRef.current?.()}
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
-      )}
 
-      {/* Shortcuts Help Overlay */}
-      <ShortcutsHelp
-        isOpen={isHelpOpen}
-        onClose={() => setIsHelpOpen(false)}
-        shortcuts={shortcuts}
+        {/* Error Toast */}
+        {error && (
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-red-500/90 text-white px-4 py-2 rounded-lg shadow-lg  text-sm animate-in fade-in slide-in-from-top-2">
+            {error}
+          </div>
+        )}
+
+        {/* Shortcuts Help Overlay */}
+        <ShortcutsHelp
+          isOpen={isHelpOpen}
+          onClose={() => setIsHelpOpen(false)}
+          shortcuts={shortcuts}
+        />
+
+        {/* Load Modal */}
+        <ChatHistoryModal
+          isOpen={isLoadModalOpen}
+          onClose={() => setIsLoadModalOpen(false)}
+          sessions={savedFiles}
+          onSelect={(id) => importChat(id)}
+          onDelete={handleDeleteChat}
+        />
+
+        <ModelSelector
+          isOpen={isModelSelectorOpen}
+          onClose={() => setIsModelSelectorOpen(false)}
+          models={availableModels}
+          selectedModel={selectedModel}
+          onSelect={setSelectedModel}
+        />
+
+        {/* Modals */}
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+        />
+
+        {/* Table of Contents */}
+        <TableOfContents messages={messages} />
+      </main>
+
+      {/* Compact Summary Modal - Outside main to prevent z-index issues */}
+      <CompactSummaryModal
+        isOpen={showCompactModal}
+        summary={compactSummary || ""}
+        summaryUpToIndex={summaryUpToIndex ?? 0}
+        onSave={(newSummary) => {
+          updateSummary(newSummary);
+          setShowCompactModal(false);
+        }}
+        onClose={() => setShowCompactModal(false)}
       />
-
-      {/* Load Modal */}
-      <ChatHistoryModal
-        isOpen={isLoadModalOpen}
-        onClose={() => setIsLoadModalOpen(false)}
-        sessions={savedFiles}
-        onSelect={(id) => importChat(id)}
-        onDelete={handleDeleteChat}
-      />
-
-      <ModelSelector
-        isOpen={isModelSelectorOpen}
-        onClose={() => setIsModelSelectorOpen(false)}
-        models={availableModels}
-        selectedModel={selectedModel}
-        onSelect={setSelectedModel}
-      />
-
-      {/* Modals */}
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-      />
-
-      {/* Table of Contents */}
-      <TableOfContents messages={messages} />
-    </main>
-
-    {/* Compact Summary Modal - Outside main to prevent z-index issues */}
-    <CompactSummaryModal
-      isOpen={showCompactModal}
-      summary={compactSummary || ''}
-      summaryUpToIndex={summaryUpToIndex ?? 0}
-      onSave={(newSummary) => {
-        updateSummary(newSummary);
-        setShowCompactModal(false);
-      }}
-      onClose={() => setShowCompactModal(false)}
-    />
     </>
   );
 }
